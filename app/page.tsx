@@ -1,0 +1,112 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { StepOneInvest } from "@/components/step-one-invest"
+import { StepTwoDetails } from "@/components/step-two-details"
+import { StepThreeReview, type ReviewData } from "@/components/step-three-review"
+import { FALLBACK_CONFIG, type InvestmentConfig } from "@/lib/investment-utils"
+
+interface InvestorData {
+  investorId: number
+  email: string
+  firstName: string
+  lastName: string
+  phone: string
+}
+
+export default function InvestmentPage() {
+  const [step, setStep] = useState(1)
+  const [config, setConfig] = useState<InvestmentConfig>(FALLBACK_CONFIG)
+  const [configLoaded, setConfigLoaded] = useState(false)
+  const [selectedAmount, setSelectedAmount] = useState(FALLBACK_CONFIG.presetAmounts[0])
+  const [investorData, setInvestorData] = useState<InvestorData | null>(null)
+  const [reviewData, setReviewData] = useState<ReviewData | null>(null)
+
+  useEffect(() => {
+    fetch("/api/deal")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.config) {
+          setConfig(data.config)
+          setSelectedAmount(data.config.presetAmounts[0])
+        }
+      })
+      .catch(() => {})
+      .finally(() => setConfigLoaded(true))
+  }, [])
+
+  const handleContinueFromStepOne = (amount: number, investor: InvestorData) => {
+    setSelectedAmount(amount)
+    setInvestorData(investor)
+    setStep(2)
+  }
+
+  const handleBackToStepOne = () => {
+    setStep(1)
+  }
+
+  const handleContinueFromStepTwo = (data: ReviewData) => {
+    setReviewData(data)
+    setStep(3)
+  }
+
+  const handleBackToStepTwo = () => {
+    setStep(2)
+  }
+
+  const handleCompleteInvestment = () => {
+    // Investment completed - could show a success page or redirect
+    // For now, this is called if no payment URL is returned
+  }
+
+  if (!configLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f7fa]">
+        <div className="text-center">
+          <div className="w-8 h-8 border-3 border-[#52b4f9] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-[#7a8299]">Loading deal information...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 1) {
+    return (
+      <StepOneInvest
+        initialAmount={selectedAmount}
+        onContinue={handleContinueFromStepOne}
+        config={config}
+      />
+    )
+  }
+
+  if (step === 2) {
+    return (
+      <StepTwoDetails
+        initialAmount={selectedAmount}
+        investorId={investorData?.investorId}
+        investorEmail={investorData?.email}
+        investorFirstName={investorData?.firstName}
+        investorLastName={investorData?.lastName}
+        investorPhone={investorData?.phone}
+        onBack={handleBackToStepOne}
+        onContinue={handleContinueFromStepTwo}
+        config={config}
+      />
+    )
+  }
+
+  if (step === 3 && reviewData) {
+    return (
+      <StepThreeReview
+        data={reviewData}
+        config={config}
+        onBack={handleBackToStepTwo}
+        onContinue={handleCompleteInvestment}
+      />
+    )
+  }
+
+  // Fallback - shouldn't reach here
+  return null
+}
