@@ -11,8 +11,7 @@ import {
   type InvestmentConfig,
 } from "@/lib/investment-utils"
 
-interface InvestorData {
-  investorId: number
+interface Step1Data {
   email: string
   firstName: string
   lastName: string
@@ -29,15 +28,16 @@ interface ExistingInvestment {
 }
 
 interface StepOneInvestProps {
-  onContinue: (amount: number, investor: InvestorData) => void
+  onContinue: (amount: number, data: Step1Data) => void
   initialAmount?: number
   config?: InvestmentConfig
 }
 
 export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CONFIG }: StepOneInvestProps) {
-  // Amount state
-  const [amount, setAmount] = useState(initialAmount || config.presetAmounts[0])
+  // Amount state - no default selection, user must choose
+  const [amount, setAmount] = useState(initialAmount || 0)
   const [customAmount, setCustomAmount] = useState("")
+  const [hasSelectedAmount, setHasSelectedAmount] = useState(!!initialAmount)
 
   // Contact fields
   const [email, setEmail] = useState("")
@@ -47,9 +47,6 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({})
-  
-  // Submission state
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
   
   // Existing investments (for resume flow)
@@ -118,6 +115,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
   const isValidAmount = isAboveMin && isBelowMax
 
   const isFormValid =
+    hasSelectedAmount &&
     isValidAmount &&
     email.trim() !== "" &&
     isValidEmail(email) &&
@@ -132,12 +130,17 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
     if (numValue > 0) {
       const aligned = alignToSharePrice(numValue, config.sharePrice)
       setAmount(aligned)
+      setHasSelectedAmount(true)
+    } else {
+      setAmount(0)
+      setHasSelectedAmount(false)
     }
   }
 
   const handlePresetClick = (presetAmount: number) => {
     setAmount(presetAmount)
     setCustomAmount("")
+    setHasSelectedAmount(true)
   }
 
   const validateForm = (): boolean => {
@@ -161,7 +164,9 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
       newErrors.phone = "Phone number is required"
     }
 
-    if (!isValidAmount) {
+    if (!hasSelectedAmount) {
+      newErrors.amount = "Please select an investment amount"
+    } else if (!isValidAmount) {
       newErrors.amount = `Investment must be between ${formatCurrency(config.minInvestment, 2)} and ${config.maxInvestment ? formatCurrency(config.maxInvestment, 0) : "unlimited"}`
     }
 
@@ -169,52 +174,21 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
     return Object.keys(newErrors).length === 0
   }
 
-  const handleContinueClick = async () => {
+  const handleContinueClick = () => {
     if (!validateForm()) return
 
-    setSubmitError("")
-    setIsSubmitting(true)
-
-    try {
-      const res = await fetch("/api/investor/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          firstName,
-          lastName,
-          phone,
-          investmentAmount: amount,
-          forceCreate: true, // Always create new since we handle resume separately via email blur
-          ...utmParams,
-        }),
+    // Fire dataLayer event
+    if (typeof window !== "undefined") {
+      (window as Record<string, unknown[]>).dataLayer = (window as Record<string, unknown[]>).dataLayer || []
+      ;(window as Record<string, unknown[]>).dataLayer.push({
+        event: "step1_complete",
+        investmentAmount: amount,
+        currency: "USD",
       })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setSubmitError(data.error || "Something went wrong. Please try again.")
-        setIsSubmitting(false)
-        return
-      }
-
-      // Fire dataLayer event
-      if (typeof window !== "undefined") {
-        (window as Record<string, unknown[]>).dataLayer = (window as Record<string, unknown[]>).dataLayer || []
-        ;(window as Record<string, unknown[]>).dataLayer.push({
-          event: "investor_created",
-          investmentAmount: amount,
-          investorType: "individual",
-          currency: "USD",
-        })
-      }
-
-      // Continue to Step 2
-      onContinue(amount, { investorId: data.investorId, email, firstName, lastName, phone })
-    } catch {
-      setSubmitError("Unable to connect. Please try again.")
-      setIsSubmitting(false)
     }
+
+    // Pass data to Step 2 - no API call, profile will be created in Step 2
+    onContinue(amount, { email, firstName, lastName, phone })
   }
 
   const handleResumeSelect = async (investorId: string) => {
@@ -390,7 +364,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
           <div className="space-y-3 mb-5">
             {config.presetAmounts.map((preset) => {
               const presetCalc = calculateInvestment(preset, config)
-              const isSelected = Math.abs(amount - preset) < 1 && customAmount === ""
+              const isSelected = hasSelectedAmount && Math.abs(amount - preset) < 1 && customAmount === ""
               const hasBonus = presetCalc.bonusPercent > 0
 
               return (
@@ -464,6 +438,9 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
           </div>
 
           {/* Error Messages */}
+          {errors.amount && (
+            <p className="text-[#cb3837] text-sm mb-3">{errors.amount}</p>
+          )}
           {submitError && (
             <p className="text-[#cb3837] text-sm mb-3">{submitError}</p>
           )}
@@ -474,11 +451,10 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
           <button
             type="button"
             onClick={handleContinueClick}
-            disabled={!isFormValid || isSubmitting}
+            disabled={!isFormValid}
             className="w-full py-3.5 rounded-lg text-[0.9375rem] font-semibold bg-[#52b4f9] text-white hover:bg-[#3a9fe0] disabled:bg-[#b8c4d4] disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            {isSubmitting ? "Processing..." : "Continue"}
-            {!isSubmitting && <span>&rarr;</span>}
+            Continue <span>&rarr;</span>
           </button>
 
           {/* Disclaimer */}
@@ -504,7 +480,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
             </div>
             
             <p className="text-sm text-[#7a8299] mb-4">
-              We found existing investments for {email}. Click to resume or close to start a new investment.
+              We found verified investments for {email}. Click one to resume where you left off, or close to start a new investment.
             </p>
 
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
@@ -520,8 +496,14 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
                     <span className="text-base font-semibold text-[#2c3345]">
                       ${inv.amount?.toLocaleString() || "—"}
                     </span>
-                    <span className="text-xs text-white bg-[#52b4f9] px-2 py-0.5 rounded capitalize">
-                      {inv.state}
+                    <span className={`text-xs px-2 py-0.5 rounded capitalize ${
+                      inv.state?.toLowerCase() === "signed" 
+                        ? "bg-[#22c55e] text-white" 
+                        : inv.state?.toLowerCase() === "waiting"
+                        ? "bg-[#f59e0b] text-white"
+                        : "bg-[#52b4f9] text-white"
+                    }`}>
+                      {inv.state === "signed" ? "Documents Signed" : inv.state === "waiting" ? "Awaiting Payment" : inv.state}
                     </span>
                   </div>
                   {(inv.first_name || inv.last_name) && (

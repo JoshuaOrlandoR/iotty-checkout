@@ -116,6 +116,10 @@ export async function POST(request: Request) {
         profileData.last_name = lastName
     }
 
+    // Log the profile data being sent
+    console.log("[v0] Creating investor profile with type:", type)
+    console.log("[v0] Profile data:", JSON.stringify(profileData, null, 2))
+
     // Create the proper profile
     const profile = await createInvestorProfile(type, profileData)
 

@@ -33,8 +33,11 @@ export async function POST(request: Request) {
     const investors: DealInvestor[] = Array.isArray(raw) ? raw : (raw.items || raw.data || [])
     console.log("[v0] Found investors:", investors.map(inv => ({ id: inv.id, state: inv.state, amount: inv.investment_value })))
 
-    // Find all resumable investors
-    const resumableStates = ["invited", "signed", "waiting"]
+    // Find all resumable investors - only those who completed verification
+    // "invited" = just created, not verified yet (skip these)
+    // "signed" = verified and signed documents
+    // "waiting" = waiting for payment/processing
+    const resumableStates = ["signed", "waiting"]
     const resumableInvestors = investors
       .filter((inv) => inv.state && resumableStates.includes(inv.state.toLowerCase()))
       .sort((a, b) => Number(b.id) - Number(a.id)) // Most recent first

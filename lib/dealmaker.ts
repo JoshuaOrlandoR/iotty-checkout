@@ -130,13 +130,16 @@ export async function getDealIncentiveTiers(dealId: string): Promise<IncentiveTi
   return data
 }
 
-export type InvestorType = "individual" | "joint" | "corporation" | "trust" | "managed"
+export type InvestorType = "individual" | "joint" | "corporation" | "trust" | "ira" | "llc" | "partnership" | "managed"
 
 const PROFILE_ENDPOINTS: Record<InvestorType, string> = {
   individual: "/investor_profiles/individuals",
   joint: "/investor_profiles/joints",
   corporation: "/investor_profiles/corporations",
   trust: "/investor_profiles/trusts",
+  ira: "/investor_profiles/individuals", // IRA uses individual profile
+  llc: "/investor_profiles/corporations", // LLC uses corporation profile
+  partnership: "/investor_profiles/corporations", // Partnership uses corporation profile
   managed: "/investor_profiles/managed",
 }
 

@@ -11,11 +11,10 @@ import type { ReviewData } from "@/components/step-three-review"
 
 interface StepTwoDetailsProps {
   initialAmount: number
-  investorId?: number
-  investorEmail?: string
-  investorFirstName?: string
-  investorLastName?: string
-  investorPhone?: string
+  investorEmail: string
+  investorFirstName: string
+  investorLastName: string
+  investorPhone: string
   onBack: () => void
   onContinue: (data: ReviewData) => void
   config?: InvestmentConfig
@@ -86,32 +85,14 @@ const VALIDATION_PATTERNS = {
 
 export function StepTwoDetails({ 
   initialAmount, 
-  investorId, 
   investorEmail, 
-  investorFirstName = "",
-  investorLastName = "",
-  investorPhone = "",
+  investorFirstName,
+  investorLastName,
+  investorPhone,
   onBack, 
   onContinue, 
   config = FALLBACK_CONFIG 
 }: StepTwoDetailsProps) {
-  // Guard: if no investorId, redirect back to Step 1
-  if (!investorId || !investorEmail) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f7fa]">
-        <div className="text-center p-6">
-          <p className="text-[#7a8299] mb-4">Please start from the beginning.</p>
-          <button
-            onClick={onBack}
-            className="px-6 py-2 bg-[#52b4f9] text-white rounded-lg font-medium hover:bg-[#3a9fe0] transition-colors"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   // Form state - pre-fill from Step 1
   const [investorType, setInvestorType] = useState("individual")
   const [firstName, setFirstName] = useState(investorFirstName)
@@ -144,6 +125,10 @@ export function StepTwoDetails({
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+  
+  // Submission state
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState("")
 
   // Get states/provinces based on country
   const getRegions = () => {
@@ -267,8 +252,56 @@ export function StepTwoDetails({
     return Object.keys(filteredErrors).length === 0
   }
 
-  const handleContinue = () => {
-    if (validateForm()) {
+  const handleContinue = async () => {
+    if (!validateForm()) return
+    
+    setSubmitError("")
+    setIsSubmitting(true)
+
+    try {
+      // Create the investor profile in DealMaker
+      const res = await fetch("/api/investor/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: investorEmail,
+          firstName,
+          lastName,
+          phone,
+          investmentAmount: initialAmount,
+          investorType,
+          streetAddress,
+          unit,
+          city,
+          postalCode,
+          country,
+          state,
+          dateOfBirth,
+          ssn,
+          ...(investorType === "joint" && { jointFirstName, jointLastName }),
+          ...(["corporation", "trust", "llc", "partnership"].includes(investorType) && { entityName }),
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setSubmitError(data.error || "Something went wrong. Please try again.")
+        setIsSubmitting(false)
+        return
+      }
+
+      // Fire dataLayer event
+      if (typeof window !== "undefined") {
+        (window as Record<string, unknown[]>).dataLayer = (window as Record<string, unknown[]>).dataLayer || []
+        ;(window as Record<string, unknown[]>).dataLayer.push({
+          event: "investor_profile_created",
+          investmentAmount: initialAmount,
+          investorType,
+          currency: "USD",
+        })
+      }
+
       const countryData = COUNTRIES.find(c => c.code === country)
       const reviewData: ReviewData = {
         firstName,
@@ -286,11 +319,14 @@ export function StepTwoDetails({
         dateOfBirth,
         ssn,
         investmentAmount: initialAmount,
-        investorId,
+        investorId: data.investorId,
         ...(investorType === "joint" && { jointFirstName, jointLastName }),
         ...(["corporation", "trust", "llc", "partnership"].includes(investorType) && { entityName }),
       }
       onContinue(reviewData)
+    } catch {
+      setSubmitError("Unable to connect. Please try again.")
+      setIsSubmitting(false)
     }
   }
 
@@ -386,21 +422,28 @@ export function StepTwoDetails({
                 <label className="text-sm text-[#7a8299]">Who is making the investment?</label>
                 <HelpCircle className="w-4 h-4 text-[#7a8299]" />
               </div>
-              <select
-                value={investorType}
-                onChange={(e) => {
-                  setInvestorType(e.target.value)
-                  // Reset type-specific fields
-                  setJointFirstName("")
-                  setJointLastName("")
-                  setEntityName("")
-                }}
-                className={selectClass("investorType")}
-              >
-                {INVESTOR_TYPES.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={investorType}
+                  onChange={(e) => {
+                    setInvestorType(e.target.value)
+                    // Reset type-specific fields
+                    setJointFirstName("")
+                    setJointLastName("")
+                    setEntityName("")
+                  }}
+                  className={selectClass("investorType")}
+                >
+                  {INVESTOR_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-[#7a8299]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Entity Name (for corporation, trust, llc, partnership) */}
@@ -563,33 +606,47 @@ export function StepTwoDetails({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <div>
                 <label className="text-[0.625rem] text-[#7a8299] mb-1 block uppercase tracking-wide">Country</label>
-                <select
-                  value={country}
-                  onChange={(e) => {
-                    setCountry(e.target.value)
-                    setState("") // Reset state when country changes
-                  }}
-                  className={selectClass("country")}
-                >
-                  {COUNTRIES.map(c => (
-                    <option key={c.code} value={c.code}>{c.name}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={country}
+                    onChange={(e) => {
+                      setCountry(e.target.value)
+                      setState("") // Reset state when country changes
+                    }}
+                    className={selectClass("country")}
+                  >
+                    {COUNTRIES.map(c => (
+                      <option key={c.code} value={c.code}>{c.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-[#7a8299]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="text-[0.625rem] text-[#7a8299] mb-1 block uppercase tracking-wide">State / Province</label>
-                <select
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  onBlur={() => handleBlur("state")}
-                  className={selectClass("state")}
-                  disabled={getRegions().length === 0}
-                >
-                  <option value="">Select state</option>
-                  {getRegions().map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    onBlur={() => handleBlur("state")}
+                    className={selectClass("state")}
+                    disabled={getRegions().length === 0}
+                  >
+                    <option value="">Select state</option>
+                    {getRegions().map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-[#7a8299]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
                 {touched.state && errors.state && (
                   <p className="text-xs text-[#cb3837] mt-1">{errors.state}</p>
                 )}
@@ -660,21 +717,37 @@ export function StepTwoDetails({
               )}
             </div>
 
+            {/* Submit Error */}
+            {submitError && (
+              <p className="text-[#cb3837] text-sm mb-3">{submitError}</p>
+            )}
+
             {/* Continue Button */}
             <button
               type="button"
               onClick={handleContinue}
-              className="w-full py-3.5 rounded-xl text-base font-semibold bg-[#52b4f9] text-white hover:bg-[#3a9fe0] transition-colors flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full py-3.5 rounded-xl text-base font-semibold bg-[#52b4f9] text-white hover:bg-[#3a9fe0] disabled:bg-[#b8c4d4] disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
-              Continue
-              <ArrowRight className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Creating profile...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
 
             {/* Back link */}
             <button
               type="button"
               onClick={onBack}
-              className="w-full mt-3 py-2 text-sm text-[#7a8299] hover:text-[#2c3345] transition-colors"
+              disabled={isSubmitting}
+              className="w-full mt-3 py-2 text-sm text-[#7a8299] hover:text-[#2c3345] disabled:opacity-50 transition-colors"
             >
               Go Back
             </button>

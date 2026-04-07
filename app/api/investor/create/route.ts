@@ -3,18 +3,16 @@ import { NextResponse } from "next/server"
 import {
   createInvestorProfile,
   createDealInvestor,
-  searchDealInvestors,
-  getInvestorAccessLink,
   isDealmakerConfigured,
   type DealMakerApiError,
-  type DealInvestor,
+  type InvestorType,
   type UtmParams,
 } from "@/lib/dealmaker"
 
 /**
  * POST /api/investor/create
- * Creates a minimal investor record early in the flow (email + amount only).
- * Returns investorId for subsequent updates, or existing investments for resume.
+ * Creates a complete investor profile with all details from Step 2.
+ * This is called when user completes Step 2 (the details form).
  */
 export async function POST(request: Request) {
   if (!isDealmakerConfigured()) {
@@ -27,56 +25,98 @@ export async function POST(request: Request) {
   const dealId = process.env.DEALMAKER_DEAL_ID!
   const body = await request.json()
 
-  const { email, firstName, lastName, phone, investmentAmount, forceCreate, utm_source, utm_medium, utm_campaign, utm_content, utm_term } = body
+  const { 
+    email, 
+    firstName, 
+    lastName, 
+    phone, 
+    investmentAmount,
+    investorType = "individual",
+    streetAddress,
+    unit,
+    city,
+    postalCode,
+    country,
+    state,
+    dateOfBirth,
+    ssn,
+    jointFirstName,
+    jointLastName,
+    entityName,
+    utm_source, 
+    utm_medium, 
+    utm_campaign, 
+    utm_content, 
+    utm_term 
+  } = body
 
-  if (!email || !investmentAmount) {
+  if (!email || !investmentAmount || !firstName || !lastName) {
     return NextResponse.json(
-      { error: "Email and investment amount are required." },
+      { error: "Email, name, and investment amount are required." },
       { status: 400 }
     )
   }
 
-  // Use provided names or fallback to placeholder
-  const first_name = firstName?.trim() || "Pending"
-  const last_name = lastName?.trim() || "Investor"
-
   try {
-    // Check for existing investors with this email first (unless forceCreate is true)
-    if (!forceCreate) {
-      const rawInvestors = await searchDealInvestors(dealId, email)
-      const raw = rawInvestors as DealInvestor[] | { items?: DealInvestor[]; data?: DealInvestor[] }
-      const existingInvestors: DealInvestor[] = Array.isArray(raw) ? raw : (raw.items || raw.data || [])
+    // Build the profile data
+    const profileData: Record<string, unknown> = {
+      email,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+    }
 
-      // Find resumable investors
-      const resumableStates = ["invited", "signed", "waiting"]
-      const resumable = existingInvestors
-        .filter((inv) => inv.state && resumableStates.includes(inv.state.toLowerCase()))
-        .sort((a, b) => Number(b.id) - Number(a.id))
+    // Add phone
+    if (phone) {
+      profileData.phone_number = phone
+    }
 
-      if (resumable.length > 0) {
-        // Return existing investments for user to choose
-        const investments = resumable.map((inv) => ({
-          id: inv.id,
-          state: inv.state,
-          amount: inv.investment_value,
-          shares: inv.number_of_securities,
-        }))
+    // Add address fields
+    if (streetAddress) {
+      profileData.street_address = streetAddress
+      if (unit) profileData.unit = unit
+      if (city) profileData.city = city
+      if (postalCode) profileData.postal_code = postalCode
+      if (country) profileData.country = country
+      if (state) profileData.region = state // DealMaker uses "region" for state/province
+    }
 
-        return NextResponse.json({
-          existingInvestments: true,
-          investments,
-        })
+    // Add date of birth (convert from MM/DD/YYYY to ISO format)
+    if (dateOfBirth) {
+      const parts = dateOfBirth.split("/")
+      if (parts.length === 3) {
+        const [month, day, year] = parts
+        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
       }
     }
 
-    // No existing investors - create a new one with the provided info
-    // Create individual profile with the name from Step 1 (will be updated/replaced in Step 2 with full details)
-    const profile = await createInvestorProfile("individual", {
-      email,
-      first_name,
-      last_name,
-      phone,
-    })
+    // Add SSN (US tax ID)
+    if (ssn) {
+      profileData.us_person = true
+      profileData.tax_id = ssn.replace(/-/g, "") // Remove dashes for API
+    }
+
+    // Handle type-specific fields
+    let type: InvestorType = "individual"
+    
+    if (investorType === "joint") {
+      type = "joint"
+      if (jointFirstName) profileData.joint_holder_first_name = jointFirstName
+      if (jointLastName) profileData.joint_holder_last_name = jointLastName
+    } else if (investorType === "corporation" || investorType === "llc" || investorType === "partnership") {
+      type = investorType === "corporation" ? "corporation" : "llc"
+      if (entityName) profileData.name = entityName
+    } else if (investorType === "trust") {
+      type = "trust"
+      if (entityName) profileData.name = entityName
+    } else if (investorType === "ira") {
+      type = "individual" // IRA uses individual profile
+    }
+
+    console.log("[v0] Creating investor profile with type:", type)
+    console.log("[v0] Profile data:", JSON.stringify(profileData, null, 2))
+
+    // Create the investor profile
+    const profile = await createInvestorProfile(type, profileData)
 
     // Build UTM params
     const utmParams: UtmParams = {}
@@ -86,35 +126,37 @@ export async function POST(request: Request) {
     if (utm_content) utmParams.utm_content = utm_content
     if (utm_term) utmParams.utm_term = utm_term
 
-    // Create the investor record
+    // Create the investor record in the deal
     const investor = await createDealInvestor(dealId, {
       email,
-      first_name,
-      last_name,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
       phone,
       investment_value: investmentAmount,
       allocation_unit: "amount",
       investor_profile_id: profile.id,
     }, utmParams)
 
+    console.log("[v0] Investor created successfully:", investor.id)
+
     return NextResponse.json({
-      existingInvestments: false,
+      success: true,
       investorId: investor.id,
       profileId: profile.id,
       subscriptionId: investor.subscription_id,
       state: investor.state,
     })
   } catch (error) {
-    console.error("Failed to create early investor:", error)
+    console.error("[v0] Failed to create investor:", error)
 
     const apiErr = error as Partial<DealMakerApiError>
     const status = apiErr.status || 500
     let userMessage = "Something went wrong. Please try again."
 
     if (status === 409) {
-      userMessage = "An investor with this email already exists."
+      userMessage = "An investor with this email already exists for this deal."
     } else if (status === 422) {
-      userMessage = "Invalid email or amount. Please check and try again."
+      userMessage = "Invalid data provided. Please check your information and try again."
     }
 
     return NextResponse.json({ error: userMessage }, { status })

@@ -6,8 +6,7 @@ import { StepTwoDetails } from "@/components/step-two-details"
 import { StepThreeReview, type ReviewData } from "@/components/step-three-review"
 import { FALLBACK_CONFIG, type InvestmentConfig } from "@/lib/investment-utils"
 
-interface InvestorData {
-  investorId: number
+interface Step1Data {
   email: string
   firstName: string
   lastName: string
@@ -19,7 +18,7 @@ export default function InvestmentPage() {
   const [config, setConfig] = useState<InvestmentConfig>(FALLBACK_CONFIG)
   const [configLoaded, setConfigLoaded] = useState(false)
   const [selectedAmount, setSelectedAmount] = useState(FALLBACK_CONFIG.presetAmounts[0])
-  const [investorData, setInvestorData] = useState<InvestorData | null>(null)
+  const [step1Data, setStep1Data] = useState<Step1Data | null>(null)
   const [reviewData, setReviewData] = useState<ReviewData | null>(null)
 
   useEffect(() => {
@@ -35,9 +34,9 @@ export default function InvestmentPage() {
       .finally(() => setConfigLoaded(true))
   }, [])
 
-  const handleContinueFromStepOne = (amount: number, investor: InvestorData) => {
+  const handleContinueFromStepOne = (amount: number, data: Step1Data) => {
     setSelectedAmount(amount)
-    setInvestorData(investor)
+    setStep1Data(data)
     setStep(2)
   }
 
@@ -80,15 +79,14 @@ export default function InvestmentPage() {
     )
   }
 
-  if (step === 2) {
+  if (step === 2 && step1Data) {
     return (
       <StepTwoDetails
         initialAmount={selectedAmount}
-        investorId={investorData?.investorId}
-        investorEmail={investorData?.email}
-        investorFirstName={investorData?.firstName}
-        investorLastName={investorData?.lastName}
-        investorPhone={investorData?.phone}
+        investorEmail={step1Data.email}
+        investorFirstName={step1Data.firstName}
+        investorLastName={step1Data.lastName}
+        investorPhone={step1Data.phone}
         onBack={handleBackToStepOne}
         onContinue={handleContinueFromStepTwo}
         config={config}
