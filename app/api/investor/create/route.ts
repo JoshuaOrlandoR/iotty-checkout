@@ -91,8 +91,16 @@ export async function POST(request: Request) {
     }
 
     // Add SSN/Tax ID per DealMaker spec (field is "taxpayer_id")
+    // Format depends on country: US = xxx-xx-xxxx (SSN), CA = xxx-xxx-xxx (SIN)
     if (ssn) {
-      profileData.taxpayer_id = ssn.replace(/-/g, "") // Remove dashes for API
+      const digits = ssn.replace(/\D/g, "") // Get only digits
+      if (country === "CA") {
+        // Canadian SIN format: xxx-xxx-xxx
+        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}`
+      } else {
+        // US SSN format: xxx-xx-xxxx
+        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5, 9)}`
+      }
     }
 
     // Handle type-specific fields
@@ -151,12 +159,19 @@ export async function POST(request: Request) {
 
     const apiErr = error as Partial<DealMakerApiError>
     const status = apiErr.status || 500
+    const responseBody = apiErr.responseBody || ""
+    
+    console.error("[v0] DealMaker API error status:", status)
+    console.error("[v0] DealMaker API error body:", responseBody)
+    
     let userMessage = "Something went wrong. Please try again."
 
     if (status === 409) {
       userMessage = "An investor with this email already exists for this deal."
     } else if (status === 422) {
-      userMessage = "Invalid data provided. Please check your information and try again."
+      userMessage = `Invalid data provided. Please check your information and try again. (${responseBody})`
+    } else if (status === 400) {
+      userMessage = `Bad request. ${responseBody}`
     }
 
     return NextResponse.json({ error: userMessage }, { status })

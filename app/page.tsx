@@ -17,7 +17,7 @@ export default function InvestmentPage() {
   const [step, setStep] = useState(1)
   const [config, setConfig] = useState<InvestmentConfig>(FALLBACK_CONFIG)
   const [configLoaded, setConfigLoaded] = useState(false)
-  const [selectedAmount, setSelectedAmount] = useState(FALLBACK_CONFIG.presetAmounts[0])
+  const [selectedAmount, setSelectedAmount] = useState(0)
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null)
   const [reviewData, setReviewData] = useState<ReviewData | null>(null)
 
@@ -27,7 +27,7 @@ export default function InvestmentPage() {
       .then((data) => {
         if (data.config) {
           setConfig(data.config)
-          setSelectedAmount(data.config.presetAmounts[0])
+          // Don't set selectedAmount - let user choose
         }
       })
       .catch(() => {})
@@ -72,7 +72,7 @@ export default function InvestmentPage() {
   if (step === 1) {
     return (
       <StepOneInvest
-        initialAmount={selectedAmount}
+        initialAmount={selectedAmount > 0 ? selectedAmount : undefined}
         onContinue={handleContinueFromStepOne}
         config={config}
       />

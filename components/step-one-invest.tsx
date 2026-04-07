@@ -34,10 +34,9 @@ interface StepOneInvestProps {
 }
 
 export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CONFIG }: StepOneInvestProps) {
-  // Amount state - no default selection, user must choose
-  const [amount, setAmount] = useState(initialAmount || 0)
+  // Amount state - use -1 as "no selection" sentinel value (invisible placeholder)
+  const [amount, setAmount] = useState(initialAmount && initialAmount > 0 ? initialAmount : -1)
   const [customAmount, setCustomAmount] = useState("")
-  const [hasSelectedAmount, setHasSelectedAmount] = useState(!!initialAmount)
 
   // Contact fields
   const [email, setEmail] = useState("")
@@ -114,8 +113,11 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
   const isBelowMax = !config.maxInvestment || amount <= config.maxInvestment
   const isValidAmount = isAboveMin && isBelowMax
 
+  // Form is valid only when a real amount is selected (not -1 placeholder)
+  const hasRealSelection = amount > 0
+  
   const isFormValid =
-    hasSelectedAmount &&
+    hasRealSelection &&
     isValidAmount &&
     email.trim() !== "" &&
     isValidEmail(email) &&
@@ -130,17 +132,14 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
     if (numValue > 0) {
       const aligned = alignToSharePrice(numValue, config.sharePrice)
       setAmount(aligned)
-      setHasSelectedAmount(true)
     } else {
-      setAmount(0)
-      setHasSelectedAmount(false)
+      setAmount(-1) // Reset to placeholder
     }
   }
 
   const handlePresetClick = (presetAmount: number) => {
     setAmount(presetAmount)
     setCustomAmount("")
-    setHasSelectedAmount(true)
   }
 
   const validateForm = (): boolean => {
@@ -164,7 +163,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
       newErrors.phone = "Phone number is required"
     }
 
-    if (!hasSelectedAmount) {
+    if (!hasRealSelection) {
       newErrors.amount = "Please select an investment amount"
     } else if (!isValidAmount) {
       newErrors.amount = `Investment must be between ${formatCurrency(config.minInvestment, 2)} and ${config.maxInvestment ? formatCurrency(config.maxInvestment, 0) : "unlimited"}`
@@ -345,26 +344,32 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
             <span>Share price {formatCurrency(config.sharePrice, 2)}</span>
           </div>
 
-          {/* Share Counter Box */}
-          <div className="bg-[#f0f4f8] rounded-lg p-3 md:p-4 mb-5 text-center">
-            <div className="flex items-center justify-center gap-2 md:gap-3">
-              <div>
-                <span className="text-xl md:text-2xl font-bold text-[#52b4f9]">{formatNumber(calculation.baseShares)}</span>
-                <p className="text-xs md:text-sm text-[#7a8299]">Shares of iotty</p>
-              </div>
-              <span className="text-lg md:text-xl text-[#7a8299]">+</span>
-              <div>
-                <span className="text-xl md:text-2xl font-bold text-[#52b4f9]">{formatNumber(calculation.bonusShares)}</span>
-                <p className="text-xs md:text-sm text-[#52b4f9]">Free Bonus Shares</p>
+          {/* Share Counter Box - only show when amount is selected (not -1 placeholder) */}
+          {amount > 0 ? (
+            <div className="bg-[#f0f4f8] rounded-lg p-3 md:p-4 mb-5 text-center">
+              <div className="flex items-center justify-center gap-2 md:gap-3">
+                <div>
+                  <span className="text-xl md:text-2xl font-bold text-[#52b4f9]">{formatNumber(calculation.baseShares)}</span>
+                  <p className="text-xs md:text-sm text-[#7a8299]">Shares of iotty</p>
+                </div>
+                <span className="text-lg md:text-xl text-[#7a8299]">+</span>
+                <div>
+                  <span className="text-xl md:text-2xl font-bold text-[#52b4f9]">{formatNumber(calculation.bonusShares)}</span>
+                  <p className="text-xs md:text-sm text-[#52b4f9]">Free Bonus Shares</p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-[#f0f4f8] rounded-lg p-3 md:p-4 mb-5 text-center">
+              <p className="text-sm text-[#7a8299]">Select an investment amount to see your shares</p>
+            </div>
+          )}
 
           {/* Preset Buttons */}
           <div className="space-y-3 mb-5">
             {config.presetAmounts.map((preset) => {
               const presetCalc = calculateInvestment(preset, config)
-              const isSelected = hasSelectedAmount && Math.abs(amount - preset) < 1 && customAmount === ""
+              const isSelected = amount > 0 && Math.abs(amount - preset) < 1 && customAmount === ""
               const hasBonus = presetCalc.bonusPercent > 0
 
               return (

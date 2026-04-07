@@ -79,7 +79,6 @@ const VALIDATION_PATTERNS = {
   postalCodeGeneric: /^[a-zA-Z0-9\s-]{3,10}$/, // Generic postal code
   phone: /^[\d\s()-]{10,20}$/, // Digits with formatting; at least 10 digits
   dateOfBirth: /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/(19|20)\d{2}$/, // MM/DD/YYYY
-  ssn: /^\d{3}-\d{2}-\d{4}$/, // XXX-XX-XXXX
   entityName: /^[a-zA-Z0-9\s.,&'-]{2,100}$/, // Business/entity names
 }
 
@@ -204,8 +203,15 @@ export function StepTwoDetails({
         return ""
 
       case "ssn":
-        if (country === "US" && !value.trim()) return "Social Security Number is required for US investors"
-        if (value && !VALIDATION_PATTERNS.ssn.test(value)) return "Please enter a valid SSN (XXX-XX-XXXX)"
+        if ((country === "US" || country === "CA") && !value.trim()) {
+          return country === "CA" ? "Social Insurance Number is required for Canadian investors" : "Social Security Number is required for US investors"
+        }
+        if (value) {
+          const digits = value.replace(/\D/g, "")
+          if (digits.length !== 9) {
+            return country === "CA" ? "Please enter a valid SIN (9 digits)" : "Please enter a valid SSN (9 digits)"
+          }
+        }
         return ""
 
       default:
@@ -346,12 +352,21 @@ export function StepTwoDetails({
     return fieldMap[field] || ""
   }
 
-  // Format SSN input (XXX-XX-XXXX)
-  const formatSSN = (value: string) => {
+  // Format SSN/SIN input based on country
+  // US SSN: XXX-XX-XXXX, Canadian SIN: XXX-XXX-XXX
+  const formatTaxId = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 9)
-    if (digits.length <= 3) return digits
-    if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`
-    return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`
+    if (country === "CA") {
+      // Canadian SIN format: XXX-XXX-XXX
+      if (digits.length <= 3) return digits
+      if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
+    } else {
+      // US SSN format: XXX-XX-XXXX
+      if (digits.length <= 3) return digits
+      if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+      return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`
+    }
   }
 
   // Format DOB input (MM/DD/YYYY)
@@ -698,16 +713,16 @@ export function StepTwoDetails({
               )}
             </div>
 
-            {/* Social Security Number */}
+            {/* Social Security Number / Social Insurance Number */}
             <div className="mb-6">
               <div className="relative">
                 <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a8299]" />
                 <input
                   type="text"
                   value={ssn}
-                  onChange={(e) => setSsn(formatSSN(e.target.value))}
+                  onChange={(e) => setSsn(formatTaxId(e.target.value))}
                   onBlur={() => handleBlur("ssn")}
-                  placeholder="Social Security Number (XXX-XX-XXXX) — Required"
+                  placeholder={country === "CA" ? "Social Insurance Number — Required" : "Social Security Number — Required"}
                   maxLength={11}
                   className={inputClass("ssn")}
                 />
