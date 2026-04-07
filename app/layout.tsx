@@ -12,8 +12,8 @@ const nunito = Nunito({
 })
 
 export const metadata: Metadata = {
-  title: 'RAD-API-STYLED - Investment Opportunity',
-  description: 'Invest in RAD Intel and receive bonus shares based on your investment amount.',
+  title: 'Invest in iotty',
+  description: 'Invest in iotty and receive bonus shares based on your investment amount.',
   icons: {
     icon: [
       {

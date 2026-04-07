@@ -3,11 +3,62 @@ import { NextResponse } from "next/server"
 import {
   createInvestorProfile,
   createDealInvestor,
+  updateDealInvestor,
   isDealmakerConfigured,
   type DealMakerApiError,
   type InvestorType,
   type UtmParams,
 } from "@/lib/dealmaker"
+
+// Country dial codes mapping (must match COUNTRIES in step-two-details.tsx)
+const COUNTRY_DIAL_CODES: Record<string, string> = {
+  US: "+1",
+  CA: "+1",
+  GB: "+44",
+  AU: "+61",
+  DE: "+49",
+  FR: "+33",
+  IT: "+39",
+  ES: "+34",
+  NL: "+31",
+  CH: "+41",
+  JP: "+81",
+  SG: "+65",
+  HK: "+852",
+  MX: "+52",
+  BR: "+55",
+}
+
+/**
+ * Convert phone number to E.164 format
+ * Input can be: (416) 206-8506, 03-1234-5678 (Japan), etc.
+ * Uses the country code to determine the correct dial code prefix
+ */
+function toE164(phone: string, countryCode = "US"): string {
+  // Strip all non-digit characters except leading +
+  const hasPlus = phone.startsWith("+")
+  const digits = phone.replace(/\D/g, "")
+  
+  // If already in E.164 format with + and enough digits, return as-is
+  if (hasPlus && digits.length >= 7) {
+    return `+${digits}`
+  }
+  
+  // Get the dial code for the country
+  const dialCode = COUNTRY_DIAL_CODES[countryCode] || "+1"
+  const dialDigits = dialCode.replace(/\D/g, "")
+  
+  // Check if the number already starts with the country dial code
+  if (digits.startsWith(dialDigits)) {
+    return `+${digits}`
+  }
+  
+  // Remove leading zero if present (common in many countries like UK, Japan, Australia)
+  const normalizedDigits = digits.startsWith("0") ? digits.slice(1) : digits
+  
+  // Add the dial code prefix
+  return `${dialCode}${normalizedDigits}`
+}
 
 /**
  * POST /api/investor/create
@@ -65,9 +116,10 @@ export async function POST(request: Request) {
       last_name: lastName.trim(),
     }
 
-    // Add phone
-    if (phone) {
-      profileData.phone_number = phone
+    // Add phone in E.164 format (required by DealMaker)
+    const e164Phone = phone ? toE164(phone, country || "US") : undefined
+    if (e164Phone) {
+      profileData.phone_number = e164Phone
     }
 
     // Add address fields per DealMaker OpenAPI spec (createIndividualProfile schema)
@@ -139,13 +191,23 @@ export async function POST(request: Request) {
       email,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
-      phone,
+      phone_number: e164Phone,
       investment_value: investmentAmount,
       allocation_unit: "amount",
       investor_profile_id: profile.id,
     }, utmParams)
 
     console.log("[v0] Investor created successfully:", investor.id)
+
+    // Explicitly patch the investor to link the profile (some DealMaker setups require this)
+    try {
+      await updateDealInvestor(dealId, investor.id, {
+        investor_profile_id: profile.id,
+      })
+      console.log("[v0] Investor patched with profile ID:", profile.id)
+    } catch (patchError) {
+      console.warn("[v0] Failed to patch investor with profile (non-fatal):", patchError)
+    }
 
     return NextResponse.json({
       success: true,
