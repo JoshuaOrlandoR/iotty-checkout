@@ -70,29 +70,29 @@ export async function POST(request: Request) {
       profileData.phone_number = phone
     }
 
-    // Add address fields
+    // Add address fields per DealMaker OpenAPI spec (createIndividualProfile schema)
     if (streetAddress) {
       profileData.street_address = streetAddress
-      if (unit) profileData.unit = unit
-      if (city) profileData.city = city
-      if (postalCode) profileData.postal_code = postalCode
-      if (country) profileData.country = country
-      if (state) profileData.region = state // DealMaker uses "region" for state/province
+      profileData.city = city
+      profileData.postal_code = postalCode
+      profileData.country = country // e.g., "US", "CA" 
+      profileData.region = state // DealMaker uses "region" for state/province
+      if (unit) profileData.unit2 = unit // DealMaker uses "unit2" not "unit"
     }
 
-    // Add date of birth (convert from MM/DD/YYYY to ISO format)
+    // Add date of birth (DealMaker expects string, format may vary - try ISO)
     if (dateOfBirth) {
       const parts = dateOfBirth.split("/")
       if (parts.length === 3) {
         const [month, day, year] = parts
+        // Try ISO format: YYYY-MM-DD
         profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
       }
     }
 
-    // Add SSN (US tax ID)
+    // Add SSN/Tax ID per DealMaker spec (field is "taxpayer_id")
     if (ssn) {
-      profileData.us_person = true
-      profileData.tax_id = ssn.replace(/-/g, "") // Remove dashes for API
+      profileData.taxpayer_id = ssn.replace(/-/g, "") // Remove dashes for API
     }
 
     // Handle type-specific fields

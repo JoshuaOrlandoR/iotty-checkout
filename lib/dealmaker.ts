@@ -145,18 +145,23 @@ const PROFILE_ENDPOINTS: Record<InvestorType, string> = {
 
 /**
  * Creates an investor profile for the given type.
- * Only sends the minimal fields we collect (email, first_name, last_name).
- * The remaining type-specific fields are completed on the DealMaker checkout.
+ * Sends all available fields to pre-fill the DealMaker checkout.
  */
 export async function createInvestorProfile(
   type: InvestorType,
   data: Record<string, unknown>
 ): Promise<InvestorProfile> {
   const endpoint = PROFILE_ENDPOINTS[type]
-  return dmFetch<InvestorProfile>(endpoint, {
+  console.log("[v0] DealMaker createInvestorProfile endpoint:", endpoint)
+  console.log("[v0] DealMaker createInvestorProfile payload:", JSON.stringify(data, null, 2))
+  
+  const result = await dmFetch<InvestorProfile>(endpoint, {
     method: "POST",
     body: JSON.stringify(data),
   })
+  
+  console.log("[v0] DealMaker createInvestorProfile response:", JSON.stringify(result, null, 2))
+  return result
 }
 
 export interface UtmParams {
