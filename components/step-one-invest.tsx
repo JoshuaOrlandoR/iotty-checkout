@@ -222,7 +222,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-3 pb-24 md:p-4 md:pb-4 bg-[#f5f7fa]">
+    <div className="min-h-screen flex items-center justify-center p-3 pb-24 md:p-4 md:pb-4 bg-transparent">
       <div className="w-full max-w-[480px]">
         {/* Main Card */}
         <div className="bg-white rounded-xl border-2 border-[#147bc3] p-4 md:p-6 lg:p-8">
