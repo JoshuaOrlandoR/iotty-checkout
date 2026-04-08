@@ -350,12 +350,12 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
               <div className="flex items-center justify-center gap-2 md:gap-3">
                 <div>
                   <span className="text-xl md:text-2xl font-bold text-[#52b4f9]">{formatNumber(calculation.baseShares)}</span>
-                  <p className="text-xs md:text-sm text-[#7a8299]">Shares of iotty</p>
+                  <p className="text-sm md:text-base text-[#7a8299]">Shares of iotty</p>
                 </div>
                 <span className="text-lg md:text-xl text-[#7a8299]">+</span>
                 <div>
-                  <span className="text-xl md:text-2xl font-bold text-[#52b4f9]">{formatNumber(calculation.bonusShares)}</span>
-                  <p className="text-xs md:text-sm text-[#52b4f9]">Free Bonus Shares</p>
+                  <span className="text-xl md:text-2xl font-bold text-[#52b4f9]">{formatCurrency(calculation.bonusShares * config.sharePrice, 0)}</span>
+                  <p className="text-sm md:text-base text-[#52b4f9]">Free Shares</p>
                 </div>
               </div>
             </div>
@@ -406,13 +406,13 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
                     {/* Right side: Bonus pills */}
                     {hasBonus && (
                       <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                        <span className="text-[0.625rem] md:text-xs font-bold py-1.5 px-2 md:py-2 md:px-3 rounded-md md:rounded-lg bg-[#52b4f9] text-white text-center min-w-[56px] md:min-w-[72px]">
-                          +{formatNumber(presetCalc.bonusShares)}<br />
-                          <span className="text-[0.5rem] md:text-[0.625rem] font-medium">Free Shares</span>
+                        <span className="text-xs md:text-sm font-bold py-1.5 px-4 md:py-2 md:px-5 rounded-md md:rounded-lg bg-[#52b4f9] text-white text-center min-w-[80px] md:min-w-[100px]">
+                          +{formatCurrency(presetCalc.bonusShares * config.sharePrice, 0)}<br />
+                          <span className="text-[0.625rem] md:text-xs font-medium">Free Shares</span>
                         </span>
-                        <span className="text-[0.625rem] md:text-xs font-bold py-1.5 px-2 md:py-2 md:px-3 rounded-md md:rounded-lg bg-[#52b4f9] text-white text-center min-w-[48px] md:min-w-[60px]">
+                        <span className="text-xs md:text-sm font-bold py-1.5 px-4 md:py-2 md:px-5 rounded-md md:rounded-lg bg-[#52b4f9] text-white text-center min-w-[65px] md:min-w-[80px]">
                           {presetCalc.bonusPercent.toFixed(0)}%<br />
-                          <span className="text-[0.5rem] md:text-[0.625rem] font-medium">Bonus</span>
+                          <span className="text-[0.625rem] md:text-xs font-medium">Bonus</span>
                         </span>
                       </div>
                     )}
