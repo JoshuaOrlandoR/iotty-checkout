@@ -223,7 +223,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
 
   return (
     <div className="min-h-screen flex items-center justify-center p-3 pb-24 md:p-4 md:pb-4 bg-transparent">
-      <div className="w-full max-w-[480px]">
+      <div className="w-full max-w-[600px]">
         {/* Main Card */}
         <div className="bg-white rounded-xl border-2 border-[#147bc3] p-4 md:p-6 lg:p-8">
           {/* Timeline */}
@@ -339,7 +339,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
           </h2>
 
           {/* Min Investment & Share Price */}
-          <div className="flex justify-between text-sm text-[#7a8299] mb-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between text-sm text-[#7a8299] mb-4 gap-1 sm:gap-0 text-center sm:text-left">
             <span>Min. investment {formatCurrency(config.minInvestment, 2)}</span>
             <span>Share price {formatCurrency(config.sharePrice, 2)}</span>
           </div>
@@ -394,7 +394,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
                         {isSelected && <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[#52b4f9]" />}
                       </div>
                       <div>
-                        <div className="text-xs md:text-[0.8125rem] font-semibold text-[#2c3345]">
+                        <div className="text-xs md:text-sm lg:text-base font-semibold text-[#2c3345]">
                           Invest {formatCurrency(preset, 0)}
                         </div>
                         <div className="text-[0.625rem] md:text-[0.6875rem] text-[#7a8299]">
