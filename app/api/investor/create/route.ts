@@ -101,6 +101,9 @@ export async function POST(request: Request) {
     utm_term 
   } = body
 
+  // Debug logging for incoming values
+  console.log("[v0] Received unit:", unit, "state:", state, "ssn:", ssn, "dateOfBirth:", dateOfBirth)
+
   if (!email || !investmentAmount || !firstName || !lastName) {
     return NextResponse.json(
       { error: "Email, name, and investment amount are required." },

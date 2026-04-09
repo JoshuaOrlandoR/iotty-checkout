@@ -289,7 +289,7 @@ const SUPPORTED_COUNTRIES: DealMakerCountry[] = [
 const VALIDATION_PATTERNS = {
   name: /^[a-zA-Z\s'-]{2,50}$/, // Letters, spaces, apostrophes, hyphens; 2-50 chars
   streetAddress: /^[a-zA-Z0-9\s.,#'-]{5,100}$/, // Alphanumeric with common address characters
-  unit: /^\d{0,10}$/, // Optional, numbers only
+  unit: /^[a-zA-Z0-9\s#-]{0,20}$/, // Optional, alphanumeric with # and -
   city: /^[a-zA-Z\s'-]{2,50}$/, // Letters, spaces, apostrophes, hyphens
   postalCodeUS: /^\d{5}(-\d{4})?$/, // US ZIP: 12345 or 12345-6789
   postalCodeCA: /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/, // Canadian: A1A 1A1
@@ -538,7 +538,21 @@ export function StepTwoDetails({
       const data = await res.json()
 
       if (!res.ok) {
-        setSubmitError(data.error || "Something went wrong. Please try again.")
+        // Handle error - could be string or object with field errors
+        let errorMessage = "Something went wrong. Please try again."
+        if (typeof data.error === "string") {
+          errorMessage = data.error
+        } else if (typeof data.error === "object" && data.error !== null) {
+          // Extract first error message from object like {taxpayer_id: ["invalid format"]}
+          const firstKey = Object.keys(data.error)[0]
+          const firstError = data.error[firstKey]
+          if (Array.isArray(firstError) && firstError.length > 0) {
+            errorMessage = `${firstKey.replace(/_/g, " ")}: ${firstError[0]}`
+          } else if (typeof firstError === "string") {
+            errorMessage = `${firstKey.replace(/_/g, " ")}: ${firstError}`
+          }
+        }
+        setSubmitError(errorMessage)
         setIsSubmitting(false)
         return
       }
@@ -855,10 +869,9 @@ export function StepTwoDetails({
             <div className="mb-4">
               <input
                 type="text"
-                inputMode="numeric"
                 value={unit}
-                onChange={(e) => setUnit(e.target.value.replace(/\D/g, ""))}
-                placeholder="Unit / Apartment / Suite (number only)"
+                onChange={(e) => setUnit(e.target.value.replace(/[^a-zA-Z0-9\s#-]/g, "").slice(0, 20))}
+                placeholder="Unit / Apartment / Suite"
                 className={inputClassNoIcon("unit")}
               />
             </div>
