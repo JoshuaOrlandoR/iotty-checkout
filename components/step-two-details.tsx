@@ -45,15 +45,13 @@ const DIAL_CODES: Record<string, string> = {
   FI: "+358", IE: "+353", AT: "+43", BE: "+32", NZ: "+64",
 }
 
-// DealMaker supported investor types
+// DealMaker supported investor types (LLC and Partnership not available in happy path)
 const INVESTOR_TYPES = [
   { value: "individual", label: "Individual" },
   { value: "joint", label: "Joint" },
   { value: "corporation", label: "Corporation" },
   { value: "trust", label: "Trust" },
   { value: "ira", label: "IRA" },
-  { value: "llc", label: "LLC" },
-  { value: "partnership", label: "Partnership" },
 ]
 
 // DealMaker supported countries with states/provinces where applicable

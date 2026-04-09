@@ -172,6 +172,10 @@ export async function POST(request: Request) {
     
     if (investorType === "joint") {
       type = "joint"
+      // Joint profile requires primary holder first_name/last_name (required)
+      // plus joint_holder_first_name/last_name for the second holder
+      profileData.first_name = firstName.trim()
+      profileData.last_name = lastName.trim()
       if (jointFirstName) profileData.joint_holder_first_name = jointFirstName
       if (jointLastName) profileData.joint_holder_last_name = jointLastName
     } else if (investorType === "corporation" || investorType === "llc" || investorType === "partnership") {
