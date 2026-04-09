@@ -445,7 +445,6 @@ export function StepTwoDetails({
     newErrors.state = validateField("state", state)
     newErrors.phone = validateField("phone", phone)
     newErrors.dateOfBirth = validateField("dateOfBirth", dateOfBirth)
-    newErrors.ssn = validateField("ssn", ssn)
     
     // Type-specific validation
     if (investorType === "joint") {
@@ -550,7 +549,6 @@ export function StepTwoDetails({
         countryCode: country,
         state,
         dateOfBirth,
-        ssn,
         investmentAmount: initialAmount,
         investorId: data.investorId,
         ...(investorType === "joint" && { jointFirstName, jointLastName }),
