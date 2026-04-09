@@ -132,13 +132,14 @@ export async function POST(request: Request) {
       if (unit) profileData.unit2 = unit // DealMaker uses "unit2" not "unit"
     }
 
-    // Add date of birth (DealMaker expects string, format may vary - try ISO)
+    // Add date of birth (DealMaker expects string)
+    // Use ISO format with noon time to prevent timezone shifting issues
     if (dateOfBirth) {
       const parts = dateOfBirth.split("/")
       if (parts.length === 3) {
         const [month, day, year] = parts
-        // Try ISO format: YYYY-MM-DD
-        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+        // Add T12:00:00 to prevent timezone from shifting the date back a day
+        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T12:00:00`
       }
     }
 

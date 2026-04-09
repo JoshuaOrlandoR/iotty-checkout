@@ -164,6 +164,29 @@ export async function createInvestorProfile(
   return result
 }
 
+/**
+ * Patches an existing investor profile with additional data.
+ * Useful to ensure address and other fields are persisted.
+ */
+export async function patchInvestorProfile(
+  type: InvestorType,
+  profileId: number,
+  data: Record<string, unknown>
+): Promise<InvestorProfile> {
+  const baseEndpoint = PROFILE_ENDPOINTS[type]
+  const endpoint = `${baseEndpoint}/${profileId}`
+  console.log("[v0] DealMaker patchInvestorProfile endpoint:", endpoint)
+  console.log("[v0] DealMaker patchInvestorProfile payload:", JSON.stringify(data, null, 2))
+  
+  const result = await dmFetch<InvestorProfile>(endpoint, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+  
+  console.log("[v0] DealMaker patchInvestorProfile response:", JSON.stringify(result, null, 2))
+  return result
+}
+
 export interface UtmParams {
   utm_source?: string
   utm_medium?: string
