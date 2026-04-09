@@ -90,7 +90,6 @@ export async function POST(request: Request) {
     country,
     state,
     dateOfBirth,
-    ssn,
     jointFirstName,
     jointLastName,
     entityName,
@@ -100,9 +99,6 @@ export async function POST(request: Request) {
     utm_content, 
     utm_term 
   } = body
-
-  // Debug logging for incoming values
-  console.log("[v0] Received unit:", unit, "state:", state, "ssn:", ssn, "dateOfBirth:", dateOfBirth)
 
   if (!email || !investmentAmount || !firstName || !lastName) {
     return NextResponse.json(
@@ -145,25 +141,6 @@ export async function POST(request: Request) {
       if (parts.length === 3) {
         const [month, day, year] = parts
         profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T00:00:00Z`
-      }
-    }
-
-    // Add SSN/Tax ID - format based on country
-    // CA SIN must be xxx-xxx-xxx, US SSN must be xxx-xx-xxxx, UK NIN is AB123456C
-    if (ssn) {
-      const digits = ssn.replace(/\D/g, "")
-      if (country === "CA" && digits.length === 9) {
-        // Canadian SIN format: xxx-xxx-xxx
-        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}`
-      } else if (country === "US" && digits.length === 9) {
-        // US SSN format: xxx-xx-xxxx
-        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5, 9)}`
-      } else if (country === "GB") {
-        // UK NIN format: AB123456C (uppercase, no spaces)
-        profileData.taxpayer_id = ssn.replace(/\s/g, "").toUpperCase()
-      } else if (ssn.trim()) {
-        // Other countries: pass as-is
-        profileData.taxpayer_id = ssn.trim()
       }
     }
 

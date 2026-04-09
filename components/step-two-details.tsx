@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRight, HelpCircle, User, MapPin, Building, Phone, Calendar, Shield } from "lucide-react"
+import { ArrowRight, HelpCircle, User, MapPin, Building, Phone, Calendar } from "lucide-react"
 import { StepTimeline } from "@/components/step-timeline"
 import {
   FALLBACK_CONFIG,
@@ -329,7 +329,6 @@ export function StepTwoDetails({
     return ""
   })
   const [dateOfBirth, setDateOfBirth] = useState("")
-  const [ssn, setSsn] = useState("")
   
   // Type-specific fields
   const [jointFirstName, setJointFirstName] = useState("")
@@ -429,35 +428,6 @@ export function StepTwoDetails({
         }
         return ""
 
-      case "ssn":
-        // US, CA, and UK require tax ID with specific formats
-        if (country === "US" && !value.trim()) {
-          return "Social Security Number is required for US investors"
-        }
-        if (country === "CA" && !value.trim()) {
-          return "Social Insurance Number is required for Canadian investors"
-        }
-        if (country === "GB" && !value.trim()) {
-          return "National Insurance Number is required for UK investors"
-        }
-        // Validate format for US/CA/UK
-        if (value && (country === "US" || country === "CA")) {
-          const digits = value.replace(/\D/g, "")
-          if (digits.length !== 9) {
-            return country === "CA" ? "Please enter a valid SIN (9 digits)" : "Please enter a valid SSN (9 digits)"
-          }
-        }
-        if (value && country === "GB") {
-          // UK NIN format: 2 letters + 6 digits + 1 letter (e.g., AB123456C)
-          const cleaned = value.replace(/\s/g, "").toUpperCase()
-          const ninRegex = /^[A-Z]{2}\d{6}[A-Z]$/
-          if (!ninRegex.test(cleaned)) {
-            return "Please enter a valid NIN (e.g., AB123456C)"
-          }
-        }
-        // Other countries: tax ID is optional and no format validation
-        return ""
-
       default:
         return ""
     }
@@ -527,7 +497,6 @@ export function StepTwoDetails({
           country,
           state,
           dateOfBirth,
-          ssn,
           ...(investorType === "joint" && { jointFirstName, jointLastName }),
           ...(["corporation", "trust", "llc", "partnership"].includes(investorType) && { entityName }),
         }),
@@ -604,35 +573,10 @@ export function StepTwoDetails({
 
   const getFieldValue = (field: string): string => {
     const fieldMap: Record<string, string> = {
-      firstName, lastName, streetAddress, unit, city, postalCode, state, phone, dateOfBirth, ssn,
+      firstName, lastName, streetAddress, unit, city, postalCode, state, phone, dateOfBirth,
       jointFirstName, jointLastName, entityName
     }
     return fieldMap[field] || ""
-  }
-
-  // Format SSN/SIN/NIN/Tax ID input based on country
-  // US SSN: XXX-XX-XXXX, Canadian SIN: XXX-XXX-XXX, UK NIN: XX999999X, Others: no formatting
-  const formatTaxId = (value: string) => {
-    if (country === "CA") {
-      // Canadian SIN format: XXX-XXX-XXX (digits only)
-      const digits = value.replace(/\D/g, "").slice(0, 9)
-      if (digits.length <= 3) return digits
-      if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`
-      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
-    } else if (country === "US") {
-      // US SSN format: XXX-XX-XXXX (digits only)
-      const digits = value.replace(/\D/g, "").slice(0, 9)
-      if (digits.length <= 3) return digits
-      if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`
-      return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`
-    } else if (country === "GB") {
-      // UK NIN format: AB123456C (2 letters + 6 digits + 1 letter)
-      const cleaned = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 9)
-      return cleaned
-    } else {
-      // Other countries: allow any characters (letters, numbers, dashes)
-      return value.slice(0, 20)
-    }
   }
 
   // Format DOB input (MM/DD/YYYY)
@@ -1008,33 +952,6 @@ export function StepTwoDetails({
               </div>
               {touched.dateOfBirth && errors.dateOfBirth && (
                 <p className="text-xs text-[#cb3837] mt-1">{errors.dateOfBirth}</p>
-              )}
-            </div>
-
-            {/* Social Security Number / Social Insurance Number / Tax ID */}
-            <div className="mb-6">
-              <div className="relative">
-                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a8299]" />
-                <input
-                  type="text"
-                  value={ssn}
-                  onChange={(e) => setSsn(formatTaxId(e.target.value))}
-                  onBlur={() => handleBlur("ssn")}
-                  placeholder={
-                    country === "CA" 
-                      ? "Social Insurance Number — Required" 
-                      : country === "US" 
-                        ? "Social Security Number — Required" 
-                        : country === "GB"
-                          ? "National Insurance Number — Required"
-                          : "Tax Identification Number — Optional"
-                  }
-                  maxLength={country === "US" || country === "CA" ? 11 : country === "GB" ? 9 : 20}
-                  className={inputClass("ssn")}
-                />
-              </div>
-              {touched.ssn && errors.ssn && (
-                <p className="text-xs text-[#cb3837] mt-1">{errors.ssn}</p>
               )}
             </div>
 
