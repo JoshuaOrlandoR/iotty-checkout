@@ -329,7 +329,6 @@ export function StepTwoDetails({
     return ""
   })
   const [dateOfBirth, setDateOfBirth] = useState("")
-  const [ssn, setSsn] = useState("")
   
   // Type-specific fields
   const [jointFirstName, setJointFirstName] = useState("")
@@ -429,24 +428,6 @@ export function StepTwoDetails({
         }
         return ""
 
-      case "ssn":
-        // SSN/SIN is required for US and CA, optional for others
-        // Joint investors skip this - they enter SSN in DealMaker checkout
-        if (country === "US" && !value.trim()) {
-          return "Social Security Number is required for US investors"
-        }
-        if (country === "CA" && !value.trim()) {
-          return "Social Insurance Number is required for Canadian investors"
-        }
-        // Validate format for US/CA
-        if (value && (country === "US" || country === "CA")) {
-          const ssnDigits = value.replace(/\D/g, "")
-          if (ssnDigits.length !== 9) {
-            return country === "CA" ? "Please enter a valid SIN (9 digits)" : "Please enter a valid SSN (9 digits)"
-          }
-        }
-        return ""
-
       default:
         return ""
     }
@@ -464,11 +445,6 @@ export function StepTwoDetails({
     newErrors.state = validateField("state", state)
     newErrors.phone = validateField("phone", phone)
     newErrors.dateOfBirth = validateField("dateOfBirth", dateOfBirth)
-    
-    // SSN validation - skip for Joint (they enter in happy path)
-    if (investorType !== "joint") {
-      newErrors.ssn = validateField("ssn", ssn)
-    }
     
     // Type-specific validation
     if (investorType === "joint") {
@@ -520,7 +496,6 @@ export function StepTwoDetails({
           country,
           state,
           dateOfBirth,
-          ssn,
           ...(investorType === "joint" && { jointFirstName, jointLastName }),
           ...(["corporation", "trust", "llc", "partnership"].includes(investorType) && { entityName }),
         }),
@@ -977,48 +952,6 @@ export function StepTwoDetails({
                 <p className="text-xs text-[#cb3837] mt-1">{errors.dateOfBirth}</p>
               )}
             </div>
-
-            {/* Social Security Number / Social Insurance Number - Hidden for Joint */}
-            {investorType !== "joint" && (
-              <div className="mb-6">
-                <input
-                  type="text"
-                  value={ssn}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    if (country === "CA") {
-                      const digits = value.replace(/\D/g, "").slice(0, 9)
-                      if (digits.length <= 3) setSsn(digits)
-                      else if (digits.length <= 6) setSsn(`${digits.slice(0, 3)}-${digits.slice(3)}`)
-                      else setSsn(`${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`)
-                    } else if (country === "US") {
-                      const digits = value.replace(/\D/g, "").slice(0, 9)
-                      if (digits.length <= 3) setSsn(digits)
-                      else if (digits.length <= 5) setSsn(`${digits.slice(0, 3)}-${digits.slice(3)}`)
-                      else setSsn(`${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`)
-                    } else {
-                      setSsn(value.slice(0, 20))
-                    }
-                  }}
-                  onBlur={() => handleBlur("ssn")}
-                  placeholder={
-                    country === "CA" 
-                      ? "Social Insurance Number — Required" 
-                      : country === "US" 
-                        ? "Social Security Number — Required" 
-                        : "Tax ID (optional)"
-                  }
-                  className={`w-full pl-4 pr-4 py-3 bg-[#f4f7fa] border rounded-xl text-[#2c3345] placeholder:text-[#7a8299] focus:outline-none transition-colors text-[15px] ${
-                    touched.ssn && errors.ssn 
-                      ? "border-[#cb3837]" 
-                      : "border-transparent focus:border-[#52b4f9]"
-                  }`}
-                />
-                {touched.ssn && errors.ssn && (
-                  <p className="text-xs text-[#cb3837] mt-1">{errors.ssn}</p>
-                )}
-              </div>
-            )}
 
             {/* Submit Error */}
             {submitError && (

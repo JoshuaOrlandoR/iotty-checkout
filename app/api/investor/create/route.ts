@@ -90,7 +90,6 @@ export async function POST(request: Request) {
     country,
     state,
     dateOfBirth,
-    ssn,
     jointFirstName,
     jointLastName,
     entityName,
@@ -143,18 +142,6 @@ export async function POST(request: Request) {
       if (parts.length === 3) {
         const [month, day, year] = parts
         profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T12:00:00Z`
-      }
-    }
-
-    // Add SSN/Tax ID if provided
-    if (ssn) {
-      const digits = ssn.replace(/\D/g, "")
-      if (country === "CA" && digits.length === 9) {
-        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}`
-      } else if (country === "US" && digits.length === 9) {
-        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5, 9)}`
-      } else if (ssn.trim()) {
-        profileData.taxpayer_id = ssn.trim()
       }
     }
 
