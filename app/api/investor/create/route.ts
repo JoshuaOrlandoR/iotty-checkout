@@ -128,31 +128,25 @@ export async function POST(request: Request) {
       profileData.city = city
       profileData.postal_code = postalCode
       profileData.country = country // e.g., "US", "CA" 
-      profileData.region = state // DealMaker uses "region" for state/province
+      // Only send region if it has a value (some countries don't have states)
+      if (state && state.trim()) {
+        profileData.region = state // DealMaker uses "region" for state/province
+      }
       if (unit) profileData.unit2 = unit // DealMaker uses "unit2" not "unit"
     }
 
-    // Add date of birth (DealMaker expects string, format may vary - try ISO)
+    // Add date of birth in YYYY/MM/DD format (DealMaker happy path format)
     if (dateOfBirth) {
       const parts = dateOfBirth.split("/")
       if (parts.length === 3) {
         const [month, day, year] = parts
-        // Try ISO format: YYYY-MM-DD
-        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+        profileData.date_of_birth = `${year}/${month.padStart(2, "0")}/${day.padStart(2, "0")}`
       }
     }
 
-    // Add SSN/Tax ID per DealMaker spec (field is "taxpayer_id")
-    // Format depends on country: US = xxx-xx-xxxx (SSN), CA = xxx-xxx-xxx (SIN)
+    // Add SSN/Tax ID - pass through as-is, let DealMaker handle validation
     if (ssn) {
-      const digits = ssn.replace(/\D/g, "") // Get only digits
-      if (country === "CA") {
-        // Canadian SIN format: xxx-xxx-xxx
-        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}`
-      } else {
-        // US SSN format: xxx-xx-xxxx
-        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5, 9)}`
-      }
+      profileData.taxpayer_id = ssn.trim()
     }
 
     // Handle type-specific fields

@@ -20,6 +20,31 @@ interface StepTwoDetailsProps {
   config?: InvestmentConfig
 }
 
+// Types for DealMaker countries/states
+interface DealMakerState {
+  name: string
+  code: string
+}
+
+interface DealMakerCountry {
+  name: string
+  code: string
+  states: DealMakerState[]
+}
+
+// Dial codes for phone formatting
+const DIAL_CODES: Record<string, string> = {
+  US: "+1", CA: "+1", GB: "+44", AU: "+61", DE: "+49", FR: "+33",
+  IT: "+39", ES: "+34", NL: "+31", CH: "+41", JP: "+81", SG: "+65",
+  HK: "+852", MX: "+52", BR: "+55", IN: "+91", CN: "+86", RU: "+7",
+  KR: "+82", ID: "+62", PH: "+63", TH: "+66", MY: "+60", VN: "+84",
+  PK: "+92", BD: "+880", EG: "+20", TR: "+90", SA: "+966", AE: "+971",
+  IL: "+972", ZA: "+27", NG: "+234", KE: "+254", AR: "+54", CO: "+57",
+  CL: "+56", PE: "+51", VE: "+58", PL: "+48", UA: "+380", RO: "+40",
+  CZ: "+420", GR: "+30", PT: "+351", SE: "+46", NO: "+47", DK: "+45",
+  FI: "+358", IE: "+353", AT: "+43", BE: "+32", NZ: "+64",
+}
+
 // DealMaker supported investor types
 const INVESTOR_TYPES = [
   { value: "individual", label: "Individual" },
@@ -31,41 +56,233 @@ const INVESTOR_TYPES = [
   { value: "partnership", label: "Partnership" },
 ]
 
-// Country list
-const COUNTRIES = [
-  { code: "US", name: "United States", dialCode: "+1" },
-  { code: "CA", name: "Canada", dialCode: "+1" },
-  { code: "GB", name: "United Kingdom", dialCode: "+44" },
-  { code: "AU", name: "Australia", dialCode: "+61" },
-  { code: "DE", name: "Germany", dialCode: "+49" },
-  { code: "FR", name: "France", dialCode: "+33" },
-  { code: "IT", name: "Italy", dialCode: "+39" },
-  { code: "ES", name: "Spain", dialCode: "+34" },
-  { code: "NL", name: "Netherlands", dialCode: "+31" },
-  { code: "CH", name: "Switzerland", dialCode: "+41" },
-  { code: "JP", name: "Japan", dialCode: "+81" },
-  { code: "SG", name: "Singapore", dialCode: "+65" },
-  { code: "HK", name: "Hong Kong", dialCode: "+852" },
-  { code: "MX", name: "Mexico", dialCode: "+52" },
-  { code: "BR", name: "Brazil", dialCode: "+55" },
-]
-
-// US States
-const US_STATES = [
-  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
-  "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
-  "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
-  "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
-  "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
-  "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont",
-  "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"
-]
-
-// Canadian Provinces
-const CA_PROVINCES = [
-  "Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland and Labrador",
-  "Northwest Territories", "Nova Scotia", "Nunavut", "Ontario", "Prince Edward Island",
-  "Quebec", "Saskatchewan", "Yukon"
+// DealMaker supported countries with states/provinces where applicable
+const SUPPORTED_COUNTRIES: DealMakerCountry[] = [
+  { code: "US", name: "United States", states: [
+    { name: "Alabama", code: "AL" }, { name: "Alaska", code: "AK" }, { name: "Arizona", code: "AZ" },
+    { name: "Arkansas", code: "AR" }, { name: "California", code: "CA" }, { name: "Colorado", code: "CO" },
+    { name: "Connecticut", code: "CT" }, { name: "Delaware", code: "DE" }, { name: "District of Columbia", code: "DC" },
+    { name: "Florida", code: "FL" }, { name: "Georgia", code: "GA" }, { name: "Hawaii", code: "HI" },
+    { name: "Idaho", code: "ID" }, { name: "Illinois", code: "IL" }, { name: "Indiana", code: "IN" },
+    { name: "Iowa", code: "IA" }, { name: "Kansas", code: "KS" }, { name: "Kentucky", code: "KY" },
+    { name: "Louisiana", code: "LA" }, { name: "Maine", code: "ME" }, { name: "Maryland", code: "MD" },
+    { name: "Massachusetts", code: "MA" }, { name: "Michigan", code: "MI" }, { name: "Minnesota", code: "MN" },
+    { name: "Mississippi", code: "MS" }, { name: "Missouri", code: "MO" }, { name: "Montana", code: "MT" },
+    { name: "Nebraska", code: "NE" }, { name: "Nevada", code: "NV" }, { name: "New Hampshire", code: "NH" },
+    { name: "New Jersey", code: "NJ" }, { name: "New Mexico", code: "NM" }, { name: "New York", code: "NY" },
+    { name: "North Carolina", code: "NC" }, { name: "North Dakota", code: "ND" }, { name: "Ohio", code: "OH" },
+    { name: "Oklahoma", code: "OK" }, { name: "Oregon", code: "OR" }, { name: "Pennsylvania", code: "PA" },
+    { name: "Rhode Island", code: "RI" }, { name: "South Carolina", code: "SC" }, { name: "South Dakota", code: "SD" },
+    { name: "Tennessee", code: "TN" }, { name: "Texas", code: "TX" }, { name: "Utah", code: "UT" },
+    { name: "Vermont", code: "VT" }, { name: "Virginia", code: "VA" }, { name: "Washington", code: "WA" },
+    { name: "West Virginia", code: "WV" }, { name: "Wisconsin", code: "WI" }, { name: "Wyoming", code: "WY" },
+  ]},
+  { code: "CA", name: "Canada", states: [
+    { name: "Alberta", code: "AB" }, { name: "British Columbia", code: "BC" }, { name: "Manitoba", code: "MB" },
+    { name: "New Brunswick", code: "NB" }, { name: "Newfoundland and Labrador", code: "NL" },
+    { name: "Northwest Territories", code: "NT" }, { name: "Nova Scotia", code: "NS" }, { name: "Nunavut", code: "NU" },
+    { name: "Ontario", code: "ON" }, { name: "Prince Edward Island", code: "PE" }, { name: "Quebec", code: "QC" },
+    { name: "Saskatchewan", code: "SK" }, { name: "Yukon", code: "YT" },
+  ]},
+  { code: "AF", name: "Afghanistan", states: [] },
+  { code: "AL", name: "Albania", states: [] },
+  { code: "DZ", name: "Algeria", states: [] },
+  { code: "AD", name: "Andorra", states: [] },
+  { code: "AO", name: "Angola", states: [] },
+  { code: "AG", name: "Antigua and Barbuda", states: [] },
+  { code: "AR", name: "Argentina", states: [] },
+  { code: "AM", name: "Armenia", states: [] },
+  { code: "AU", name: "Australia", states: [
+    { name: "Australian Capital Territory", code: "ACT" }, { name: "New South Wales", code: "NSW" },
+    { name: "Northern Territory", code: "NT" }, { name: "Queensland", code: "QLD" },
+    { name: "South Australia", code: "SA" }, { name: "Tasmania", code: "TAS" },
+    { name: "Victoria", code: "VIC" }, { name: "Western Australia", code: "WA" },
+  ]},
+  { code: "AT", name: "Austria", states: [] },
+  { code: "AZ", name: "Azerbaijan", states: [] },
+  { code: "BS", name: "Bahamas", states: [] },
+  { code: "BH", name: "Bahrain", states: [] },
+  { code: "BD", name: "Bangladesh", states: [] },
+  { code: "BB", name: "Barbados", states: [] },
+  { code: "BY", name: "Belarus", states: [] },
+  { code: "BE", name: "Belgium", states: [] },
+  { code: "BZ", name: "Belize", states: [] },
+  { code: "BJ", name: "Benin", states: [] },
+  { code: "BT", name: "Bhutan", states: [] },
+  { code: "BO", name: "Bolivia", states: [] },
+  { code: "BA", name: "Bosnia and Herzegovina", states: [] },
+  { code: "BW", name: "Botswana", states: [] },
+  { code: "BR", name: "Brazil", states: [] },
+  { code: "BN", name: "Brunei", states: [] },
+  { code: "BG", name: "Bulgaria", states: [] },
+  { code: "BF", name: "Burkina Faso", states: [] },
+  { code: "BI", name: "Burundi", states: [] },
+  { code: "KH", name: "Cambodia", states: [] },
+  { code: "CM", name: "Cameroon", states: [] },
+  { code: "CV", name: "Cape Verde", states: [] },
+  { code: "CF", name: "Central African Republic", states: [] },
+  { code: "TD", name: "Chad", states: [] },
+  { code: "CL", name: "Chile", states: [] },
+  { code: "CN", name: "China", states: [] },
+  { code: "CO", name: "Colombia", states: [] },
+  { code: "KM", name: "Comoros", states: [] },
+  { code: "CG", name: "Congo", states: [] },
+  { code: "CR", name: "Costa Rica", states: [] },
+  { code: "HR", name: "Croatia", states: [] },
+  { code: "CU", name: "Cuba", states: [] },
+  { code: "CY", name: "Cyprus", states: [] },
+  { code: "CZ", name: "Czech Republic", states: [] },
+  { code: "DK", name: "Denmark", states: [] },
+  { code: "DJ", name: "Djibouti", states: [] },
+  { code: "DM", name: "Dominica", states: [] },
+  { code: "DO", name: "Dominican Republic", states: [] },
+  { code: "EC", name: "Ecuador", states: [] },
+  { code: "EG", name: "Egypt", states: [] },
+  { code: "SV", name: "El Salvador", states: [] },
+  { code: "GQ", name: "Equatorial Guinea", states: [] },
+  { code: "ER", name: "Eritrea", states: [] },
+  { code: "EE", name: "Estonia", states: [] },
+  { code: "ET", name: "Ethiopia", states: [] },
+  { code: "FJ", name: "Fiji", states: [] },
+  { code: "FI", name: "Finland", states: [] },
+  { code: "FR", name: "France", states: [] },
+  { code: "GA", name: "Gabon", states: [] },
+  { code: "GM", name: "Gambia", states: [] },
+  { code: "GE", name: "Georgia", states: [] },
+  { code: "DE", name: "Germany", states: [] },
+  { code: "GH", name: "Ghana", states: [] },
+  { code: "GR", name: "Greece", states: [] },
+  { code: "GD", name: "Grenada", states: [] },
+  { code: "GT", name: "Guatemala", states: [] },
+  { code: "GN", name: "Guinea", states: [] },
+  { code: "GW", name: "Guinea-Bissau", states: [] },
+  { code: "GY", name: "Guyana", states: [] },
+  { code: "HT", name: "Haiti", states: [] },
+  { code: "HN", name: "Honduras", states: [] },
+  { code: "HK", name: "Hong Kong", states: [] },
+  { code: "HU", name: "Hungary", states: [] },
+  { code: "IS", name: "Iceland", states: [] },
+  { code: "IN", name: "India", states: [] },
+  { code: "ID", name: "Indonesia", states: [] },
+  { code: "IR", name: "Iran", states: [] },
+  { code: "IQ", name: "Iraq", states: [] },
+  { code: "IE", name: "Ireland", states: [] },
+  { code: "IL", name: "Israel", states: [] },
+  { code: "IT", name: "Italy", states: [] },
+  { code: "JM", name: "Jamaica", states: [] },
+  { code: "JP", name: "Japan", states: [] },
+  { code: "JO", name: "Jordan", states: [] },
+  { code: "KZ", name: "Kazakhstan", states: [] },
+  { code: "KE", name: "Kenya", states: [] },
+  { code: "KI", name: "Kiribati", states: [] },
+  { code: "KP", name: "North Korea", states: [] },
+  { code: "KR", name: "South Korea", states: [] },
+  { code: "KW", name: "Kuwait", states: [] },
+  { code: "KG", name: "Kyrgyzstan", states: [] },
+  { code: "LA", name: "Laos", states: [] },
+  { code: "LV", name: "Latvia", states: [] },
+  { code: "LB", name: "Lebanon", states: [] },
+  { code: "LS", name: "Lesotho", states: [] },
+  { code: "LR", name: "Liberia", states: [] },
+  { code: "LY", name: "Libya", states: [] },
+  { code: "LI", name: "Liechtenstein", states: [] },
+  { code: "LT", name: "Lithuania", states: [] },
+  { code: "LU", name: "Luxembourg", states: [] },
+  { code: "MO", name: "Macau", states: [] },
+  { code: "MK", name: "North Macedonia", states: [] },
+  { code: "MG", name: "Madagascar", states: [] },
+  { code: "MW", name: "Malawi", states: [] },
+  { code: "MY", name: "Malaysia", states: [] },
+  { code: "MV", name: "Maldives", states: [] },
+  { code: "ML", name: "Mali", states: [] },
+  { code: "MT", name: "Malta", states: [] },
+  { code: "MH", name: "Marshall Islands", states: [] },
+  { code: "MR", name: "Mauritania", states: [] },
+  { code: "MU", name: "Mauritius", states: [] },
+  { code: "MX", name: "Mexico", states: [] },
+  { code: "FM", name: "Micronesia", states: [] },
+  { code: "MD", name: "Moldova", states: [] },
+  { code: "MC", name: "Monaco", states: [] },
+  { code: "MN", name: "Mongolia", states: [] },
+  { code: "ME", name: "Montenegro", states: [] },
+  { code: "MA", name: "Morocco", states: [] },
+  { code: "MZ", name: "Mozambique", states: [] },
+  { code: "MM", name: "Myanmar", states: [] },
+  { code: "NA", name: "Namibia", states: [] },
+  { code: "NR", name: "Nauru", states: [] },
+  { code: "NP", name: "Nepal", states: [] },
+  { code: "NL", name: "Netherlands", states: [] },
+  { code: "NZ", name: "New Zealand", states: [] },
+  { code: "NI", name: "Nicaragua", states: [] },
+  { code: "NE", name: "Niger", states: [] },
+  { code: "NG", name: "Nigeria", states: [] },
+  { code: "NO", name: "Norway", states: [] },
+  { code: "OM", name: "Oman", states: [] },
+  { code: "PK", name: "Pakistan", states: [] },
+  { code: "PW", name: "Palau", states: [] },
+  { code: "PS", name: "Palestine", states: [] },
+  { code: "PA", name: "Panama", states: [] },
+  { code: "PG", name: "Papua New Guinea", states: [] },
+  { code: "PY", name: "Paraguay", states: [] },
+  { code: "PE", name: "Peru", states: [] },
+  { code: "PH", name: "Philippines", states: [] },
+  { code: "PL", name: "Poland", states: [] },
+  { code: "PT", name: "Portugal", states: [] },
+  { code: "QA", name: "Qatar", states: [] },
+  { code: "RO", name: "Romania", states: [] },
+  { code: "RU", name: "Russia", states: [] },
+  { code: "RW", name: "Rwanda", states: [] },
+  { code: "KN", name: "Saint Kitts and Nevis", states: [] },
+  { code: "LC", name: "Saint Lucia", states: [] },
+  { code: "VC", name: "Saint Vincent and the Grenadines", states: [] },
+  { code: "WS", name: "Samoa", states: [] },
+  { code: "SM", name: "San Marino", states: [] },
+  { code: "ST", name: "Sao Tome and Principe", states: [] },
+  { code: "SA", name: "Saudi Arabia", states: [] },
+  { code: "SN", name: "Senegal", states: [] },
+  { code: "RS", name: "Serbia", states: [] },
+  { code: "SC", name: "Seychelles", states: [] },
+  { code: "SL", name: "Sierra Leone", states: [] },
+  { code: "SG", name: "Singapore", states: [] },
+  { code: "SK", name: "Slovakia", states: [] },
+  { code: "SI", name: "Slovenia", states: [] },
+  { code: "SB", name: "Solomon Islands", states: [] },
+  { code: "SO", name: "Somalia", states: [] },
+  { code: "ZA", name: "South Africa", states: [] },
+  { code: "SS", name: "South Sudan", states: [] },
+  { code: "ES", name: "Spain", states: [] },
+  { code: "LK", name: "Sri Lanka", states: [] },
+  { code: "SD", name: "Sudan", states: [] },
+  { code: "SR", name: "Suriname", states: [] },
+  { code: "SZ", name: "Eswatini", states: [] },
+  { code: "SE", name: "Sweden", states: [] },
+  { code: "CH", name: "Switzerland", states: [] },
+  { code: "SY", name: "Syria", states: [] },
+  { code: "TW", name: "Taiwan", states: [] },
+  { code: "TJ", name: "Tajikistan", states: [] },
+  { code: "TZ", name: "Tanzania", states: [] },
+  { code: "TH", name: "Thailand", states: [] },
+  { code: "TL", name: "Timor-Leste", states: [] },
+  { code: "TG", name: "Togo", states: [] },
+  { code: "TO", name: "Tonga", states: [] },
+  { code: "TT", name: "Trinidad and Tobago", states: [] },
+  { code: "TN", name: "Tunisia", states: [] },
+  { code: "TR", name: "Turkey", states: [] },
+  { code: "TM", name: "Turkmenistan", states: [] },
+  { code: "TV", name: "Tuvalu", states: [] },
+  { code: "UG", name: "Uganda", states: [] },
+  { code: "UA", name: "Ukraine", states: [] },
+  { code: "AE", name: "United Arab Emirates", states: [] },
+  { code: "GB", name: "United Kingdom", states: [] },
+  { code: "UY", name: "Uruguay", states: [] },
+  { code: "UZ", name: "Uzbekistan", states: [] },
+  { code: "VU", name: "Vanuatu", states: [] },
+  { code: "VA", name: "Vatican City", states: [] },
+  { code: "VE", name: "Venezuela", states: [] },
+  { code: "VN", name: "Vietnam", states: [] },
+  { code: "YE", name: "Yemen", states: [] },
+  { code: "ZM", name: "Zambia", states: [] },
+  { code: "ZW", name: "Zimbabwe", states: [] },
 ]
 
 // Validation regex patterns
@@ -128,18 +345,21 @@ export function StepTwoDetails({
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
+  
+  // DealMaker only supports US and Canada (regulatory compliance)
+  const countries = SUPPORTED_COUNTRIES
 
   // Get states/provinces based on country
-  const getRegions = () => {
-    if (country === "US") return US_STATES
-    if (country === "CA") return CA_PROVINCES
-    return []
+  const getRegions = (): DealMakerState[] => {
+    const selectedCountry = countries.find((c) => c.code === country)
+    return selectedCountry?.states || []
   }
 
   // Get country dial code
   const getDialCode = () => {
-    const c = COUNTRIES.find(c => c.code === country)
-    return c ? `${c.name} ${c.dialCode}` : country
+    const selectedCountry = countries.find((c) => c.code === country)
+    const dialCode = DIAL_CODES[country] || "+1"
+    return selectedCountry ? `${selectedCountry.name} ${dialCode}` : country
   }
 
   // Validate a single field
@@ -203,15 +423,21 @@ export function StepTwoDetails({
         return ""
 
       case "ssn":
-        if ((country === "US" || country === "CA") && !value.trim()) {
-          return country === "CA" ? "Social Insurance Number is required for Canadian investors" : "Social Security Number is required for US investors"
+        // Only US and CA require tax ID with specific formats
+        if (country === "US" && !value.trim()) {
+          return "Social Security Number is required for US investors"
         }
-        if (value) {
+        if (country === "CA" && !value.trim()) {
+          return "Social Insurance Number is required for Canadian investors"
+        }
+        // Validate format only for US/CA
+        if (value && (country === "US" || country === "CA")) {
           const digits = value.replace(/\D/g, "")
           if (digits.length !== 9) {
             return country === "CA" ? "Please enter a valid SIN (9 digits)" : "Please enter a valid SSN (9 digits)"
           }
         }
+        // Other countries: tax ID is optional and no format validation
         return ""
 
       default:
@@ -308,7 +534,7 @@ export function StepTwoDetails({
         })
       }
 
-      const countryData = COUNTRIES.find(c => c.code === country)
+      const countryData = countries.find(c => c.code === country)
       const reviewData: ReviewData = {
         firstName,
         lastName,
@@ -352,20 +578,24 @@ export function StepTwoDetails({
     return fieldMap[field] || ""
   }
 
-  // Format SSN/SIN input based on country
-  // US SSN: XXX-XX-XXXX, Canadian SIN: XXX-XXX-XXX
+  // Format SSN/SIN/Tax ID input based on country
+  // US SSN: XXX-XX-XXXX, Canadian SIN: XXX-XXX-XXX, Others: no formatting
   const formatTaxId = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 9)
     if (country === "CA") {
-      // Canadian SIN format: XXX-XXX-XXX
+      // Canadian SIN format: XXX-XXX-XXX (digits only)
+      const digits = value.replace(/\D/g, "").slice(0, 9)
       if (digits.length <= 3) return digits
       if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`
       return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
-    } else {
-      // US SSN format: XXX-XX-XXXX
+    } else if (country === "US") {
+      // US SSN format: XXX-XX-XXXX (digits only)
+      const digits = value.replace(/\D/g, "").slice(0, 9)
       if (digits.length <= 3) return digits
       if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`
       return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`
+    } else {
+      // Other countries: allow any characters (letters, numbers, dashes)
+      return value.slice(0, 20)
     }
   }
 
@@ -630,7 +860,7 @@ export function StepTwoDetails({
                     }}
                     className={selectClass("country")}
                   >
-                    {COUNTRIES.map(c => (
+                    {countries.map(c => (
                       <option key={c.code} value={c.code}>{c.name}</option>
                     ))}
                   </select>
@@ -653,7 +883,7 @@ export function StepTwoDetails({
                   >
                     <option value="">Select state</option>
                     {getRegions().map(s => (
-                      <option key={s} value={s}>{s}</option>
+                      <option key={s.code} value={s.name}>{s.name}</option>
                     ))}
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -673,7 +903,7 @@ export function StepTwoDetails({
               <div className="flex">
                 <div className="flex items-center gap-1 px-3 py-3 border border-r-0 border-[#d1d9e6] rounded-l-lg bg-[#f5f7fa] text-xs text-[#7a8299] whitespace-nowrap">
                   <span className="hidden sm:inline">{getDialCode()}</span>
-                  <span className="sm:hidden">{COUNTRIES.find(c => c.code === country)?.dialCode || "+1"}</span>
+                  <span className="sm:hidden">{DIAL_CODES[country] || "+1"}</span>
                 </div>
                 <div className="relative flex-1">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a8299]" />
@@ -713,7 +943,7 @@ export function StepTwoDetails({
               )}
             </div>
 
-            {/* Social Security Number / Social Insurance Number */}
+            {/* Social Security Number / Social Insurance Number / Tax ID */}
             <div className="mb-6">
               <div className="relative">
                 <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a8299]" />
@@ -722,8 +952,14 @@ export function StepTwoDetails({
                   value={ssn}
                   onChange={(e) => setSsn(formatTaxId(e.target.value))}
                   onBlur={() => handleBlur("ssn")}
-                  placeholder={country === "CA" ? "Social Insurance Number — Required" : "Social Security Number — Required"}
-                  maxLength={11}
+                  placeholder={
+                    country === "CA" 
+                      ? "Social Insurance Number — Required" 
+                      : country === "US" 
+                        ? "Social Security Number — Required" 
+                        : "Tax Identification Number — Optional"
+                  }
+                  maxLength={country === "US" || country === "CA" ? 11 : 20}
                   className={inputClass("ssn")}
                 />
               </div>
