@@ -406,7 +406,16 @@ export function StepTwoDetails({
       case "phone":
         if (!value.trim()) return "Phone number is required"
         const digitsOnly = value.replace(/\D/g, "")
-        if (digitsOnly.length < 10) return "Please enter a valid phone number (at least 10 digits)"
+        // Validation based on country
+        if (country === "US" || country === "CA") {
+          if (digitsOnly.length !== 10) return "Please enter a valid 10-digit phone number"
+        } else if (country === "GB") {
+          if (digitsOnly.length < 10 || digitsOnly.length > 11) return "Please enter a valid UK phone number"
+        } else if (country === "AU") {
+          if (digitsOnly.length !== 10) return "Please enter a valid 10-digit phone number"
+        } else {
+          if (digitsOnly.length < 7 || digitsOnly.length > 15) return "Please enter a valid phone number (7-15 digits)"
+        }
         return ""
 
       case "dateOfBirth":
@@ -423,18 +432,29 @@ export function StepTwoDetails({
         return ""
 
       case "ssn":
-        // Only US and CA require tax ID with specific formats
+        // US, CA, and UK require tax ID with specific formats
         if (country === "US" && !value.trim()) {
           return "Social Security Number is required for US investors"
         }
         if (country === "CA" && !value.trim()) {
           return "Social Insurance Number is required for Canadian investors"
         }
-        // Validate format only for US/CA
+        if (country === "GB" && !value.trim()) {
+          return "National Insurance Number is required for UK investors"
+        }
+        // Validate format for US/CA/UK
         if (value && (country === "US" || country === "CA")) {
           const digits = value.replace(/\D/g, "")
           if (digits.length !== 9) {
             return country === "CA" ? "Please enter a valid SIN (9 digits)" : "Please enter a valid SSN (9 digits)"
+          }
+        }
+        if (value && country === "GB") {
+          // UK NIN format: 2 letters + 6 digits + 1 letter (e.g., AB123456C)
+          const cleaned = value.replace(/\s/g, "").toUpperCase()
+          const ninRegex = /^[A-Z]{2}\d{6}[A-Z]$/
+          if (!ninRegex.test(cleaned)) {
+            return "Please enter a valid NIN (e.g., AB123456C)"
           }
         }
         // Other countries: tax ID is optional and no format validation
@@ -578,8 +598,8 @@ export function StepTwoDetails({
     return fieldMap[field] || ""
   }
 
-  // Format SSN/SIN/Tax ID input based on country
-  // US SSN: XXX-XX-XXXX, Canadian SIN: XXX-XXX-XXX, Others: no formatting
+  // Format SSN/SIN/NIN/Tax ID input based on country
+  // US SSN: XXX-XX-XXXX, Canadian SIN: XXX-XXX-XXX, UK NIN: XX999999X, Others: no formatting
   const formatTaxId = (value: string) => {
     if (country === "CA") {
       // Canadian SIN format: XXX-XXX-XXX (digits only)
@@ -593,6 +613,10 @@ export function StepTwoDetails({
       if (digits.length <= 3) return digits
       if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`
       return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`
+    } else if (country === "GB") {
+      // UK NIN format: AB123456C (2 letters + 6 digits + 1 letter)
+      const cleaned = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 9)
+      return cleaned
     } else {
       // Other countries: allow any characters (letters, numbers, dashes)
       return value.slice(0, 20)
@@ -607,12 +631,36 @@ export function StepTwoDetails({
     return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
   }
 
-  // Format phone input
+  // Format phone input based on country
   const formatPhone = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 10)
-    if (digits.length <= 3) return digits
-    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+    const digits = value.replace(/\D/g, "")
+    
+    if (country === "US" || country === "CA") {
+      // North American format: (XXX) XXX-XXXX
+      const limited = digits.slice(0, 10)
+      if (limited.length <= 3) return limited
+      if (limited.length <= 6) return `(${limited.slice(0, 3)}) ${limited.slice(3)}`
+      return `(${limited.slice(0, 3)}) ${limited.slice(3, 6)}-${limited.slice(6)}`
+    } else if (country === "GB") {
+      // UK format: XXXXX XXXXXX (11 digits)
+      const limited = digits.slice(0, 11)
+      if (limited.length <= 5) return limited
+      return `${limited.slice(0, 5)} ${limited.slice(5)}`
+    } else if (country === "AU") {
+      // Australia format: XXXX XXX XXX (10 digits)
+      const limited = digits.slice(0, 10)
+      if (limited.length <= 4) return limited
+      if (limited.length <= 7) return `${limited.slice(0, 4)} ${limited.slice(4)}`
+      return `${limited.slice(0, 4)} ${limited.slice(4, 7)} ${limited.slice(7)}`
+    } else {
+      // Generic international format: group in 3s, max 15 digits
+      const limited = digits.slice(0, 15)
+      const groups = []
+      for (let i = 0; i < limited.length; i += 3) {
+        groups.push(limited.slice(i, i + 3))
+      }
+      return groups.join(" ")
+    }
   }
 
   const inputClass = (field: string) => 
@@ -912,7 +960,15 @@ export function StepTwoDetails({
                     value={phone}
                     onChange={(e) => setPhone(formatPhone(e.target.value))}
                     onBlur={() => handleBlur("phone")}
-                    placeholder="Phone number"
+                    placeholder={
+                      country === "US" || country === "CA" 
+                        ? "(555) 123-4567" 
+                        : country === "GB" 
+                          ? "07123 456789"
+                          : country === "AU"
+                            ? "0412 345 678"
+                            : "Phone number"
+                    }
                     className={`w-full pl-10 pr-4 py-3 border rounded-r-lg text-[#2c3345] text-sm bg-[#f5f7fa] placeholder:text-[#7a8299] focus:outline-none focus:border-[#52b4f9] focus:ring-2 focus:ring-[#52b4f9]/20 transition-all ${
                       touched.phone && errors.phone ? "border-[#cb3837]" : "border-[#d1d9e6]"
                     }`}
@@ -957,9 +1013,11 @@ export function StepTwoDetails({
                       ? "Social Insurance Number — Required" 
                       : country === "US" 
                         ? "Social Security Number — Required" 
-                        : "Tax Identification Number — Optional"
+                        : country === "GB"
+                          ? "National Insurance Number — Required"
+                          : "Tax Identification Number — Optional"
                   }
-                  maxLength={country === "US" || country === "CA" ? 11 : 20}
+                  maxLength={country === "US" || country === "CA" ? 11 : country === "GB" ? 9 : 20}
                   className={inputClass("ssn")}
                 />
               </div>
