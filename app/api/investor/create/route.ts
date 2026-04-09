@@ -135,41 +135,15 @@ export async function POST(request: Request) {
     }
 
     // Add date of birth in YYYY-MM-DD format (DealMaker required format)
-    // Add T00:00:00Z to ensure UTC interpretation and prevent timezone shift
+    // Use T12:00:00Z (noon UTC) to prevent timezone shift issues
+    // (midnight UTC can shift back a day when converted to US timezones)
     if (dateOfBirth) {
       const parts = dateOfBirth.split("/")
       if (parts.length === 3) {
         const [month, day, year] = parts
-        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T00:00:00Z`
+        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T12:00:00Z`
       }
     }
-
-    // Handle type-specific fields
-    let type: InvestorType = "individual"
-    
-    if (investorType === "joint") {
-      type = "joint"
-      // Joint profile requires primary holder first_name/last_name (required)
-      // plus joint_holder_first_name/last_name for the second holder
-      profileData.first_name = firstName.trim()
-      profileData.last_name = lastName.trim()
-      if (jointFirstName) profileData.joint_holder_first_name = jointFirstName
-      if (jointLastName) profileData.joint_holder_last_name = jointLastName
-    } else if (investorType === "corporation" || investorType === "llc" || investorType === "partnership") {
-      type = investorType === "corporation" ? "corporation" : "llc"
-      if (entityName) profileData.name = entityName
-    } else if (investorType === "trust") {
-      type = "trust"
-      if (entityName) profileData.name = entityName
-    } else if (investorType === "ira") {
-      type = "individual" // IRA uses individual profile
-    }
-
-    console.log("[v0] Creating investor profile with type:", type)
-    console.log("[v0] Profile data:", JSON.stringify(profileData, null, 2))
-
-    // Create the investor profile
-    const profile = await createInvestorProfile(type, profileData)
 
     // Build UTM params
     const utmParams: UtmParams = {}
@@ -179,33 +153,80 @@ export async function POST(request: Request) {
     if (utm_content) utmParams.utm_content = utm_content
     if (utm_term) utmParams.utm_term = utm_term
 
+    // Determine profile type and create profile
+    // Joint requires taxpayer_id which we don't collect - skip profile, user selects Joint in checkout
+    let type: InvestorType = "individual"
+    let profileId: number | undefined
+    
+    if (investorType === "joint") {
+      // Skip profile creation for Joint - DealMaker checkout will let user select Joint and enter taxpayer_id
+      console.log("[v0] Skipping profile creation for Joint - user will select Joint and enter details in checkout")
+    } else if (investorType === "corporation") {
+      type = "corporation"
+      if (entityName) profileData.name = entityName
+      console.log("[v0] Creating corporation profile")
+      const profile = await createInvestorProfile(type, profileData)
+      profileId = profile.id
+    } else if (investorType === "trust") {
+      type = "trust"
+      if (entityName) profileData.name = entityName
+      console.log("[v0] Creating trust profile")
+      const profile = await createInvestorProfile(type, profileData)
+      profileId = profile.id
+    } else {
+      // individual or ira
+      type = "individual"
+      console.log("[v0] Creating individual profile")
+      const profile = await createInvestorProfile(type, profileData)
+      profileId = profile.id
+    }
+    
+    if (profileId) {
+      console.log("[v0] Profile created with ID:", profileId)
+    }
+
     // Create the investor record in the deal
-    const investor = await createDealInvestor(dealId, {
+    const investorData: {
+      email: string
+      first_name: string
+      last_name: string
+      phone_number: string
+      investment_value: number
+      allocation_unit: string
+      investor_profile_id?: number
+    } = {
       email,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       phone_number: e164Phone,
       investment_value: investmentAmount,
       allocation_unit: "amount",
-      investor_profile_id: profile.id,
-    }, utmParams)
-
+    }
+    
+    // Only attach profile if we created one
+    if (profileId) {
+      investorData.investor_profile_id = profileId
+    }
+    
+    const investor = await createDealInvestor(dealId, investorData, utmParams)
     console.log("[v0] Investor created successfully:", investor.id)
 
-    // Explicitly patch the investor to link the profile (some DealMaker setups require this)
-    try {
-      await updateDealInvestor(dealId, investor.id, {
-        investor_profile_id: profile.id,
-      })
-      console.log("[v0] Investor patched with profile ID:", profile.id)
-    } catch (patchError) {
-      console.warn("[v0] Failed to patch investor with profile (non-fatal):", patchError)
+    // If we created a profile, patch the investor to ensure the link (some DealMaker setups require this)
+    if (profileId) {
+      try {
+        await updateDealInvestor(dealId, investor.id, {
+          investor_profile_id: profileId,
+        })
+        console.log("[v0] Investor patched with profile ID:", profileId)
+      } catch (patchError) {
+        console.warn("[v0] Failed to patch investor with profile (non-fatal):", patchError)
+      }
     }
 
     return NextResponse.json({
       success: true,
       investorId: investor.id,
-      profileId: profile.id,
+      profileId: profileId,
       subscriptionId: investor.subscription_id,
       state: investor.state,
     })
