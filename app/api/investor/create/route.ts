@@ -136,11 +136,12 @@ export async function POST(request: Request) {
     }
 
     // Add date of birth in YYYY-MM-DD format (DealMaker required format)
+    // Add T00:00:00Z to ensure UTC interpretation and prevent timezone shift
     if (dateOfBirth) {
       const parts = dateOfBirth.split("/")
       if (parts.length === 3) {
         const [month, day, year] = parts
-        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T00:00:00Z`
       }
     }
 
