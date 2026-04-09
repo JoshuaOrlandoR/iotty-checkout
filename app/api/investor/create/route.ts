@@ -135,12 +135,12 @@ export async function POST(request: Request) {
       if (unit) profileData.unit2 = unit // DealMaker uses "unit2" not "unit"
     }
 
-    // Add date of birth in YYYY/MM/DD format (DealMaker happy path format)
+        // Add date of birth in MM/DD/YYYY format (DealMaker happy path format)
     if (dateOfBirth) {
       const parts = dateOfBirth.split("/")
       if (parts.length === 3) {
         const [month, day, year] = parts
-        profileData.date_of_birth = `${year}/${month.padStart(2, "0")}/${day.padStart(2, "0")}`
+        profileData.date_of_birth = `${month.padStart(2, "0")}/${day.padStart(2, "0")}/${year}`
       }
     }
 
