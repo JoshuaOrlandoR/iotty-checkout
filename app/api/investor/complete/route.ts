@@ -128,14 +128,9 @@ export async function POST(request: Request) {
       investor_profile_id: profile.id,
     })
 
-    // Get access link for redirect
-    let paymentUrl: string | null = null
-    try {
-      const accessLink = await getInvestorAccessLink(dealId, investorId)
-      paymentUrl = accessLink.access_link || null
-    } catch {
-      console.error("Failed to get access link")
-    }
+    // Use OTP access URL for authentication screen (triggers verification for new users)
+    // Per DealMaker docs: https://app.dealmaker.tech/deals/{{deal_id}}/investors/{{investor_id}}/otp_access
+    const paymentUrl = `https://app.dealmaker.tech/deals/${dealId}/investors/${investorId}/otp_access`
 
     return NextResponse.json({
       investorId: updated.id,
