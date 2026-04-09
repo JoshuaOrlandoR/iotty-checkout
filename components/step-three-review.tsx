@@ -125,7 +125,21 @@ export function StepThreeReview({ data, config = FALLBACK_CONFIG, onBack, onCont
       const result = await res.json()
 
       if (!res.ok) {
-        setSubmitError(result.error || "Failed to complete investment. Please try again.")
+        // Handle error - could be string or object with field errors
+        let errorMessage = "Failed to complete investment. Please try again."
+        if (typeof result.error === "string") {
+          errorMessage = result.error
+        } else if (typeof result.error === "object" && result.error !== null) {
+          // Extract first error message from object like {taxpayer_id: ["invalid format"]}
+          const firstKey = Object.keys(result.error)[0]
+          const firstError = result.error[firstKey]
+          if (Array.isArray(firstError) && firstError.length > 0) {
+            errorMessage = `${firstKey.replace(/_/g, " ")}: ${firstError[0]}`
+          } else if (typeof firstError === "string") {
+            errorMessage = `${firstKey.replace(/_/g, " ")}: ${firstError}`
+          }
+        }
+        setSubmitError(errorMessage)
       } else {
         if (result.paymentUrl) {
           // Redirect to DealMaker's hosted payment page (break out of iframe if embedded)
