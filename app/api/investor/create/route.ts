@@ -128,21 +128,17 @@ export async function POST(request: Request) {
       profileData.city = city
       profileData.postal_code = postalCode
       profileData.country = country // e.g., "US", "CA" 
-      // Only send region if it has a value (some countries don't have states)
-      if (state && state.trim()) {
-        profileData.region = state // DealMaker uses "region" for state/province
-      }
+      profileData.region = state // DealMaker uses "region" for state/province
       if (unit) profileData.unit2 = unit // DealMaker uses "unit2" not "unit"
     }
 
-    // Add date of birth
-    // DealMaker may interpret ISO dates with timezone shifts, so try MM-DD-YYYY format
+    // Add date of birth (DealMaker expects string, format may vary - try ISO)
     if (dateOfBirth) {
       const parts = dateOfBirth.split("/")
       if (parts.length === 3) {
         const [month, day, year] = parts
-        // Try sending in MM-DD-YYYY format to avoid timezone interpretation
-        profileData.date_of_birth = `${month.padStart(2, "0")}-${day.padStart(2, "0")}-${year}`
+        // Try ISO format: YYYY-MM-DD
+        profileData.date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
       }
     }
 
