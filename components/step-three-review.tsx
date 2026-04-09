@@ -148,7 +148,7 @@ export function StepThreeReview({ data, config = FALLBACK_CONFIG, onBack, onCont
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center px-3 py-4 md:p-4 md:pt-8 md:pb-8 bg-transparent">
+    <div className="min-h-screen flex items-start justify-center px-3 pb-4 md:px-4 md:pb-8 bg-transparent">
       <div className="w-full max-w-[600px]">
         {/* Main Card */}
         <div className="bg-white rounded-2xl md:rounded-3xl overflow-hidden shadow-sm border border-[#147bc3]">

@@ -222,7 +222,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-3 pb-24 md:p-4 md:pb-4 bg-transparent">
+    <div className="min-h-screen flex items-start justify-center px-3 pb-24 md:px-4 md:pb-4 bg-transparent">
       <div className="w-full max-w-[600px]">
         {/* Main Card */}
         <div className="bg-white rounded-xl border-2 border-[#147bc3] p-4 md:p-6 lg:p-8">
@@ -406,13 +406,13 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
                     {/* Right side: Bonus pills */}
                     {hasBonus && (
                       <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                        <span className="text-xs md:text-sm font-bold py-1.5 px-4 md:py-2 md:px-5 rounded-md md:rounded-lg bg-[#52b4f9] text-white text-center min-w-[80px] md:min-w-[100px]">
+                        <span className="text-[0.6875rem] md:text-sm font-bold py-1 px-4 md:py-2 md:px-6 rounded-md md:rounded-lg bg-[#52b4f9] text-white text-center min-w-[78px] md:min-w-[115px]">
                           +{formatCurrency(presetCalc.bonusShares * config.sharePrice, 0)}<br />
-                          <span className="text-[0.625rem] md:text-xs font-medium">Free Shares</span>
+                          <span className="text-[0.5625rem] md:text-xs font-medium">Free Shares</span>
                         </span>
-                        <span className="text-xs md:text-sm font-bold py-1.5 px-4 md:py-2 md:px-5 rounded-md md:rounded-lg bg-[#52b4f9] text-white text-center min-w-[65px] md:min-w-[80px]">
+                        <span className="text-[0.6875rem] md:text-sm font-bold py-1 px-4 md:py-2 md:px-6 rounded-md md:rounded-lg bg-[#52b4f9] text-white text-center min-w-[62px] md:min-w-[90px]">
                           {presetCalc.bonusPercent.toFixed(0)}%<br />
-                          <span className="text-[0.625rem] md:text-xs font-medium">Bonus</span>
+                          <span className="text-[0.5625rem] md:text-xs font-medium">Bonus</span>
                         </span>
                       </div>
                     )}
