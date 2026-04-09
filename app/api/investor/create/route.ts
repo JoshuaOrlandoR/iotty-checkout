@@ -90,6 +90,7 @@ export async function POST(request: Request) {
     country,
     state,
     dateOfBirth,
+    ssn,
     jointFirstName,
     jointLastName,
     entityName,
@@ -145,6 +146,18 @@ export async function POST(request: Request) {
       }
     }
 
+    // Add SSN/Tax ID if provided
+    if (ssn) {
+      const digits = ssn.replace(/\D/g, "")
+      if (country === "CA" && digits.length === 9) {
+        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}`
+      } else if (country === "US" && digits.length === 9) {
+        profileData.taxpayer_id = `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5, 9)}`
+      } else if (ssn.trim()) {
+        profileData.taxpayer_id = ssn.trim()
+      }
+    }
+
     // Build UTM params
     const utmParams: UtmParams = {}
     if (utm_source) utmParams.utm_source = utm_source
@@ -159,8 +172,9 @@ export async function POST(request: Request) {
     let profileId: number | undefined
     
     if (investorType === "joint") {
-      // Skip profile creation for Joint - DealMaker checkout will let user select Joint and enter taxpayer_id
-      console.log("[v0] Skipping profile creation for Joint - user will select Joint and enter details in checkout")
+      // Skip profile creation for Joint - user will select Joint in DealMaker checkout
+      // and enter SSN/SIN there (Joint profile requires taxpayer_id)
+      console.log("[v0] Skipping profile creation for Joint - user will complete in checkout")
     } else if (investorType === "corporation") {
       type = "corporation"
       if (entityName) profileData.name = entityName
