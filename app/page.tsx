@@ -11,6 +11,7 @@ interface Step1Data {
   firstName: string
   lastName: string
   phone: string
+  utmParams?: Record<string, string>
 }
 
 export default function InvestmentPage() {
@@ -87,6 +88,7 @@ export default function InvestmentPage() {
         investorFirstName={step1Data.firstName}
         investorLastName={step1Data.lastName}
         investorPhone={step1Data.phone}
+        utmParams={step1Data.utmParams}
         onBack={handleBackToStepOne}
         onContinue={handleContinueFromStepTwo}
         config={config}

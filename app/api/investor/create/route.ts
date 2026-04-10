@@ -3,7 +3,6 @@ import { NextResponse } from "next/server"
 import {
   createInvestorProfile,
   createDealInvestor,
-  updateDealInvestor,
   isDealmakerConfigured,
   type DealMakerApiError,
   type InvestorType,
@@ -211,18 +210,6 @@ export async function POST(request: Request) {
     
     const investor = await createDealInvestor(dealId, investorData, utmParams)
     console.log("[v0] Investor created successfully:", investor.id)
-
-    // If we created a profile, patch the investor to ensure the link (some DealMaker setups require this)
-    if (profileId) {
-      try {
-        await updateDealInvestor(dealId, investor.id, {
-          investor_profile_id: profileId,
-        })
-        console.log("[v0] Investor patched with profile ID:", profileId)
-      } catch (patchError) {
-        console.warn("[v0] Failed to patch investor with profile (non-fatal):", patchError)
-      }
-    }
 
     return NextResponse.json({
       success: true,

@@ -15,6 +15,7 @@ interface StepTwoDetailsProps {
   investorFirstName: string
   investorLastName: string
   investorPhone: string
+  utmParams?: Record<string, string>
   onBack: () => void
   onContinue: (data: ReviewData) => void
   config?: InvestmentConfig
@@ -303,6 +304,7 @@ export function StepTwoDetails({
   investorFirstName,
   investorLastName,
   investorPhone,
+  utmParams,
   onBack, 
   onContinue, 
   config = FALLBACK_CONFIG 
@@ -498,6 +500,7 @@ export function StepTwoDetails({
           dateOfBirth,
           ...(investorType === "joint" && { jointFirstName, jointLastName }),
           ...(["corporation", "trust", "llc", "partnership"].includes(investorType) && { entityName }),
+          ...utmParams,
         }),
       })
 

@@ -16,6 +16,7 @@ interface Step1Data {
   firstName: string
   lastName: string
   phone: string
+  utmParams?: Record<string, string>
 }
 
 interface ExistingInvestment {
@@ -187,7 +188,7 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
     }
 
     // Pass data to Step 2 - no API call, profile will be created in Step 2
-    onContinue(amount, { email, firstName, lastName, phone })
+    onContinue(amount, { email, firstName, lastName, phone, utmParams })
   }
 
   const handleResumeSelect = async (investorId: string) => {

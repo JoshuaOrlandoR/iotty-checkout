@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server"
 
 import {
-  createInvestorProfile,
-  updateDealInvestor,
   getInvestorAccessLink,
+  createInvestorProfile,
   isDealmakerConfigured,
-  type DealMakerApiError,
-  type InvestorType,
 } from "@/lib/dealmaker"
 
 /**
@@ -122,19 +119,20 @@ export async function POST(request: Request) {
 
     // Create the proper profile
     const profile = await createInvestorProfile(type, profileData)
+    console.log("[v0] Profile created with ID:", profile.id)
 
-    // Update the investor with the new profile
-    const updated = await updateDealInvestor(dealId, investorId, {
-      investor_profile_id: profile.id,
-    })
+    // Note: We skip the PATCH to link investor to profile here because DealMaker
+    // rejects it if the profile is incomplete (missing taxpayer_id for US/CA).
+    // The user will complete their profile including SSN/SIN in DealMaker's checkout,
+    // and DealMaker will handle the linking automatically.
 
     // Use OTP access URL for authentication screen (triggers verification for new users)
     // Per DealMaker docs: https://app.dealmaker.tech/deals/{{deal_id}}/investors/{{investor_id}}/otp_access
     const paymentUrl = `https://app.dealmaker.tech/deals/${dealId}/investors/${investorId}/otp_access`
 
     return NextResponse.json({
-      investorId: updated.id,
-      state: updated.state,
+      investorId,
+      state: "invited",
       paymentUrl,
     })
   } catch (error) {
