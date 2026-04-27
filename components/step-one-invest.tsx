@@ -346,8 +346,9 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
           </div>
 
           {/* Share Counter Box - only show when amount is selected (not -1 placeholder) */}
-          {amount > 0 ? (
-            <div className="bg-[#f0f4f8] rounded-lg p-3 md:p-4 mb-5 text-center">
+          {/* min-h ensures consistent height to prevent layout shift on mobile */}
+          <div className="bg-[#f0f4f8] rounded-lg p-3 md:p-4 mb-5 text-center min-h-[72px] md:min-h-[80px] flex items-center justify-center">
+            {amount > 0 ? (
               <div className="flex items-center justify-center gap-2 md:gap-3">
                 <div>
                   <span className="text-xl md:text-2xl font-bold text-[#52b4f9]">{formatNumber(calculation.baseShares)}</span>
@@ -359,12 +360,10 @@ export function StepOneInvest({ onContinue, initialAmount, config = FALLBACK_CON
                   <p className="text-sm md:text-base text-[#52b4f9]">Free Shares</p>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="bg-[#f0f4f8] rounded-lg p-3 md:p-4 mb-5 text-center">
+            ) : (
               <p className="text-sm text-[#7a8299]">Select an investment amount to see your shares</p>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Preset Buttons */}
           <div className="space-y-3 mb-5">

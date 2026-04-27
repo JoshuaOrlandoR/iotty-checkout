@@ -35,23 +35,49 @@ export default function InvestmentPage() {
       .finally(() => setConfigLoaded(true))
   }, [])
 
+  // Send content height to parent iframe for dynamic resizing
+  useEffect(() => {
+    const sendHeight = () => {
+      const height = document.body.scrollHeight
+      window.parent?.postMessage({ type: 'setIframeHeight', height }, '*')
+    }
+    
+    // Send on step change and after a brief delay for render
+    sendHeight()
+    const timeout = setTimeout(sendHeight, 100)
+    
+    // Also observe DOM changes
+    const observer = new ResizeObserver(sendHeight)
+    observer.observe(document.body)
+    
+    return () => {
+      clearTimeout(timeout)
+      observer.disconnect()
+    }
+  }, [step])
+
   const handleContinueFromStepOne = (amount: number, data: Step1Data) => {
     setSelectedAmount(amount)
     setStep1Data(data)
     setStep(2)
+    // Tell parent window to scroll iframe into view
+    window.parent?.postMessage({ type: 'scrollToIframe' }, '*')
   }
 
   const handleBackToStepOne = () => {
     setStep(1)
+    window.parent?.postMessage({ type: 'scrollToIframe' }, '*')
   }
 
   const handleContinueFromStepTwo = (data: ReviewData) => {
     setReviewData(data)
     setStep(3)
+    window.parent?.postMessage({ type: 'scrollToIframe' }, '*')
   }
 
   const handleBackToStepTwo = () => {
     setStep(2)
+    window.parent?.postMessage({ type: 'scrollToIframe' }, '*')
   }
 
   const handleCompleteInvestment = () => {
